@@ -32,21 +32,17 @@ const seedData = async () => {
 
     // Create admin
     const adminEmail = 'admin@laxmi.com';
-    let admin = await User.findOne({ email: adminEmail });
-    if (!admin) {
-      admin = await User.create({
-        name: 'Admin',
-        email: adminEmail,
-        password: 'admin123',
-        role: 'admin',
-        studentId: '',
-        teacherId: '',
-        status: 'active'
-      });
-      console.log('Admin created successfully: admin@laxmi.com / admin123');
-    } else {
-      console.log('Admin user already exists');
-    }
+    await User.deleteMany({ email: adminEmail });
+    let admin = await User.create({
+      name: 'Admin',
+      email: adminEmail,
+      password: '1234567890',
+      role: 'admin',
+      studentId: '',
+      teacherId: '',
+      status: 'active'
+    });
+    console.log('Admin created successfully: admin@laxmi.com / 1234567890');
 
     // Clean up old student/teacher logs in User table to enforce role collections
     await User.deleteMany({ role: { $in: ['student', 'teacher'] } });
@@ -456,7 +452,7 @@ const seedData = async () => {
         experience: '12 Years',
         bio: 'Senior Full Stack Architect and researcher. Dr. Jenkins has over a decade of industry experience designing robust cloud applications and teaching advanced frameworks.',
         email: 'teacher@laxmi.com',
-        password: 'teacher123',
+        password: '1234567890',
         teacherId: 'TCH-2026-001',
         phone: '+91 98765 43211',
         socialLinks: {
@@ -474,7 +470,7 @@ const seedData = async () => {
         experience: '8 Years',
         bio: 'Former senior data analyst at Techcorp. Mark specializes in Python data wrangling, machine learning, and AI model orchestration.',
         email: 'mark.t@laxmi.com',
-        password: 'teacher123',
+        password: '1234567890',
         teacherId: 'TCH-2026-002',
         phone: '+91 98765 43212',
         socialLinks: {
@@ -492,7 +488,7 @@ const seedData = async () => {
         experience: '6 Years',
         bio: 'Lead product designer specializing in modern Figma workflows, system guidelines, and user experience analysis.',
         email: 'elena.r@laxmi.com',
-        password: 'teacher123',
+        password: '1234567890',
         teacherId: 'TCH-2026-003',
         phone: '+91 98765 43213',
         socialLinks: {
@@ -519,7 +515,7 @@ const seedData = async () => {
         course: 'Full Stack Web Dev',
         batch: 'Jan 2024 (Morning)',
         email: 'student@laxmi.com',
-        password: 'student123',
+        password: '1234567890',
         phone: '+91 99999 88881',
         address: '102, Shanti Nagar, Sector 4, Mumbai, MH',
         joiningDate: new Date('2024-01-15'),
@@ -533,7 +529,7 @@ const seedData = async () => {
         course: 'UI/UX Design',
         batch: 'Feb 2024 (Evening)',
         email: 'priya.patel@example.com',
-        password: 'student123',
+        password: '1234567890',
         phone: '+91 99999 88882',
         address: '405, Orchid Residency, Drive In Road, Ahmedabad, GJ',
         joiningDate: new Date('2024-02-10'),
@@ -547,7 +543,7 @@ const seedData = async () => {
         course: 'Python for Data Science',
         batch: 'Jan 2024 (Weekend)',
         email: 'vikram.singh@example.com',
-        password: 'student123',
+        password: '1234567890',
         phone: '+91 99999 88883',
         address: '12, Greenfield Enclave, Phase 2, Mohali, PB',
         joiningDate: new Date('2024-01-20'),
