@@ -6,6 +6,7 @@ import { getCourses } from '../../services/courseService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -123,8 +124,6 @@ const Dashboard = () => {
   });
   // Sort activities by timestamp descending
   activities.sort((a, b) => b.timestamp - a.timestamp);
-
-  const { user } = useSelector((state) => state.auth);
 
   return (
     <div className="space-y-stack-lg">
