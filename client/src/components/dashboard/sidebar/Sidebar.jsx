@@ -1,11 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const Sidebar = () => {
+  const { user } = useSelector((state) => state.auth);
+
   const menuItems = [
     { label: 'Dashboard', icon: 'dashboard', to: '/admin' },
     { label: 'Students', icon: 'group', to: '/admin/students' },
     { label: 'Teachers', icon: 'school', to: '/admin/teachers' },
+    { label: 'User Management', icon: 'manage_accounts', to: '/admin/users' },
     { label: 'Courses', icon: 'menu_book', to: '/admin/courses' },
     { label: 'Admissions', icon: 'person_add', to: '/admin/admissions' },
     { label: 'Attendance', icon: 'calendar_month', to: '/admin/attendance' },
@@ -13,10 +17,16 @@ const Sidebar = () => {
     { label: 'Payments', icon: 'payments', to: '/admin/payments' },
     { label: 'Gallery', icon: 'collections', to: '/admin/gallery' },
     { label: 'Reviews', icon: 'rate_review', to: '/admin/reviews' },
+    { label: 'Success Stories', icon: 'play_circle', to: '/admin/success-stories' },
     { label: 'Notifications', icon: 'notifications', to: '/admin/notifications' },
     { label: 'Settings', icon: 'settings', to: '/admin/settings' },
     { label: 'Profile', icon: 'account_circle', to: '/admin/profile' },
   ];
+
+  const getInitials = (name) => {
+    if (!name) return 'AD';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
 
   return (
     <aside className="bg-surface-container-lowest dark:bg-surface-container-low h-screen w-64 fixed left-0 top-0 overflow-y-auto border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex flex-col py-stack-lg z-50">
@@ -47,14 +57,22 @@ const Sidebar = () => {
 
       <div className="px-6 mt-auto">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-container-high text-left">
-          <img
-            alt="Academy Admin Profile"
-            className="w-10 h-10 rounded-full object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXsM5BRm9BCuVU4a4_QoUYA6bqbykHJEnFxdOPIYBKGtXjnYEDs-PS1ZvKmS-9q3vo6pcKZHthyBxM87c9elQJ8iHfix6jo9mrrLwfApZh3XuBezqL0y_Ii4mI32Ay00-57Xe1lZTtVi8_h381T-L9sGaYTr6IwCAxhLTr1LfUQMzXE0Y7PU78P0I8V_MXhoyDU-sJEK7Csc3s62iWOcdQlFhT2oKrxVuVc1LUO3wtDSNDmncfoRs11ZcU8cpnSLKc-SyvRtMZuXtv"
-          />
+          {user?.profilePhoto ? (
+            <img
+              alt="Academy Admin Profile"
+              className="w-10 h-10 rounded-full object-cover border border-outline"
+              src={user.profilePhoto}
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm">
+              {getInitials(user?.name)}
+            </div>
+          )}
           <div className="overflow-hidden">
-            <p className="font-label-md text-label-md truncate">Admin User</p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant truncate">Super Admin</p>
+            <p className="font-label-md text-label-md truncate">{user?.name || 'Admin User'}</p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant truncate uppercase">
+              {user?.role === 'admin' ? 'Super Admin' : user?.role || 'User'}
+            </p>
           </div>
         </div>
       </div>

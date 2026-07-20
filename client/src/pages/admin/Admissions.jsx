@@ -1,92 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getAdmissions, createAdmission, updateAdmission, deleteAdmission } from '../../services/admissionService';
+import { getCourses } from '../../services/courseService';
 
 const Admissions = () => {
   const navigate = useNavigate();
 
   // Kanban Pipeline State
   const [pipelineData, setPipelineData] = useState({
-    applied: [
-      {
-        id: 'app-1',
-        name: 'Liam Henderson',
-        email: 'liam.h@email.com',
-        course: 'Python Dev',
-        time: '2h ago',
-        reviewerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDBPeJ0t5_sMWv1erIh3ODurWJUwQXxPghYqIhlEapxE43fDFWmp8Uwq7Dg9sIr0JIki_A67I32YldGRd_lJxQbv2ErRv1Nivjeex1baQY5-FFGETcn0Xx5845gdneJhn5iIjmA0t9tCDtPAYOvrdMRVTEIDy3evk9qu_FCiBe-iL1DWPddgUjdwN4qAoshbHPNwq9factWXJWtZRPRedF3QQ6X8GWZZPLFpAIC-tleVBMzMY6r1UmSpXdJ1bTWb-SIxrXyfxxLJUAc'
-      },
-      {
-        id: 'app-2',
-        name: 'Sarah Jenkins',
-        email: 's.jenkins@test.org',
-        course: 'Cybersecurity',
-        time: '5h ago',
-        reviewerInitials: 'SJ'
-      }
-    ],
-    interviewed: [
-      {
-        id: 'int-1',
-        name: 'Michael Chen',
-        course: 'Web Design',
-        time: 'Tomorrow, 10 AM',
-        detail: 'Zoom Meeting',
-        type: 'video',
-        date: 'Aug 24, 2023'
-      },
-      {
-        id: 'int-2',
-        name: 'Aria Montgomery',
-        course: 'UI/UX Found.',
-        time: 'Aug 26, 2 PM',
-        detail: 'Room 302',
-        type: 'room',
-        reviewerImage: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZjRpUF-gjcooZfHZUnR2yv2ozDJQ59nk3DSyAxdJOsjTL-IcjK0Tz7RgzvkZzJ5aN_GHVe05eMlmnJqAcP7U1jA3rxdVjCpWn0N-lhDtJnl1ZtFAmpW7XZS20Z3LyqzHTZVCuT7BP6tqJ1nr0gAKsa3dkqbk4rG5Jrb-7_6hOaaPRK3fACbwnfaVgdgefq8inpQHwNAmAA_2MExnh8e1UrqBI1Dm5rgFhVa3uAcNiL3dCeHWshSSfLfwN7Vn48RzHfzx3v27QtkAk'
-      }
-    ],
-    reviewing: [
-      {
-        id: 'rev-1',
-        name: 'David Okoro',
-        course: 'Data Science',
-        time: 'Action Needed',
-        detail: 'Background check pending.'
-      }
-    ],
-    enrolled: []
+    pending: [],
+    approved: [],
+    rejected: []
   });
 
-  const [followups, setFollowups] = useState([
-    {
-      id: 'fol-1',
-      name: 'Emma Watson',
-      course: 'Digital Marketing',
-      status: 'New Inquiry',
-      lastInteraction: 'Email sent 2d ago',
-      nextStep: 'Call for interview',
-      initials: 'EW',
-      color: 'bg-primary-container text-on-primary-container'
-    },
-    {
-      id: 'fol-2',
-      name: 'Robert Junior',
-      course: 'Python Masterclass',
-      status: 'Interviewed',
-      lastInteraction: 'F2F Meeting 1d ago',
-      nextStep: 'Review Documents',
-      initials: 'RJ',
-      color: 'bg-tertiary-container text-on-tertiary-container'
-    }
-  ]);
+  const [courses, setCourses] = useState([]);
+  const [followups, setFollowups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newApp, setNewApp] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    course: 'Python Dev',
-    stage: 'applied'
+    phone: '',
+    course: '',
+    batch: 'Jan 2024 (Morning)',
+    address: '',
+    message: ''
   });
+
+  const fetchAdmissionsData = async () => {
+    try {
+      setLoading(true);
+      const data = await getAdmissions();
+      
+      // Group by status
+      const pending = data.filter(a => a.status === 'pending' || !a.status);
+      const approved = data.filter(a => a.status === 'approved');
+      const rejected = data.filter(a => a.status === 'rejected');
+
+      setPipelineData({ pending, approved, rejected });
+      
+      // Map followups list (show pending and rejected inquiries)
+      const nonApproved = data.filter(a => a.status !== 'approved').map(a => {
+        const studentName = a.studentName || 'Student';
+        const initials = studentName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'ST';
+        const colors = ['bg-primary-container text-on-primary-container', 'bg-secondary-container text-on-secondary-container', 'bg-tertiary-container text-on-tertiary-container'];
+        const colorIndex = studentName.charCodeAt(0) % colors.length;
+        
+        return {
+          id: a._id,
+          name: studentName,
+          course: a.course,
+          status: a.status ? a.status.charAt(0).toUpperCase() + a.status.slice(1) : 'Pending',
+          lastInteraction: a.message || 'No remarks provided',
+          nextStep: a.status === 'pending' ? 'Review & Approve' : 'Re-engage Applicant',
+          initials,
+          color: colors[colorIndex],
+          phone: a.phone,
+          email: a.email
+        };
+      });
+      setFollowups(nonApproved);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch admissions list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCoursesData = async () => {
+    try {
+      const courseList = await getCourses();
+      setCourses(courseList);
+      if (courseList.length > 0) {
+        setNewApp(prev => ({ ...prev, course: courseList[0].title }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch courses:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmissionsData();
+    fetchCoursesData();
+  }, []);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -106,111 +107,70 @@ const Admissions = () => {
     }));
   };
 
-  const handleCreateApplication = (e) => {
+  const handleCreateApplication = async (e) => {
     e.preventDefault();
-    if (!newApp.firstName || !newApp.lastName || !newApp.email) {
-      alert('Please fill in all fields.');
+    if (!newApp.firstName || !newApp.lastName || !newApp.phone) {
+      alert('Please fill in Name and Phone number.');
       return;
     }
 
     const fullName = `${newApp.firstName} ${newApp.lastName}`;
-    const initials = `${newApp.firstName.charAt(0)}${newApp.lastName.charAt(0)}`.toUpperCase();
 
-    if (newApp.stage === 'applied') {
-      const added = {
-        id: `app-${Date.now()}`,
-        name: fullName,
+    try {
+      await createAdmission({
+        studentName: fullName,
         email: newApp.email,
-        course: newApp.course,
-        time: 'Just now',
-        reviewerInitials: initials
-      };
-      setPipelineData(prev => ({
-        ...prev,
-        applied: [added, ...prev.applied]
-      }));
-    } else if (newApp.stage === 'interviewed') {
-      const added = {
-        id: `int-${Date.now()}`,
-        name: fullName,
-        course: newApp.course,
-        time: 'Tomorrow, 11 AM',
-        detail: 'Zoom Meeting',
-        type: 'video',
-        date: 'Aug 25, 2023'
-      };
-      setPipelineData(prev => ({
-        ...prev,
-        interviewed: [added, ...prev.interviewed]
-      }));
-    } else if (newApp.stage === 'reviewing') {
-      const added = {
-        id: `rev-${Date.now()}`,
-        name: fullName,
-        course: newApp.course,
-        time: 'Under Review',
-        detail: 'Academic records review pending.'
-      };
-      setPipelineData(prev => ({
-        ...prev,
-        reviewing: [added, ...prev.reviewing]
-      }));
+        phone: newApp.phone,
+        course: newApp.course || (courses.length > 0 ? courses[0].title : 'Basic Computer'),
+        batch: newApp.batch,
+        address: newApp.address,
+        message: newApp.message,
+        status: 'pending'
+      });
+
+      fetchAdmissionsData();
+      setNewApp({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        course: courses.length > 0 ? courses[0].title : '',
+        batch: 'Jan 2024 (Morning)',
+        address: '',
+        message: ''
+      });
+      handleCloseModal();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error creating application.');
     }
-
-    // Add to follow-up list as well
-    const folAdded = {
-      id: `fol-${Date.now()}`,
-      name: fullName,
-      course: newApp.course,
-      status: 'New Inquiry',
-      lastInteraction: 'Created profile just now',
-      nextStep: 'Review Application',
-      initials: initials,
-      color: 'bg-primary-container text-on-primary-container'
-    };
-    setFollowups(prev => [folAdded, ...prev]);
-
-    setNewApp({
-      firstName: '',
-      lastName: '',
-      email: '',
-      course: 'Python Dev',
-      stage: 'applied'
-    });
-    handleCloseModal();
   };
 
-  const handleReviewCandidate = (name, stage, id) => {
-    // Action trigger simulated candidates transition down the board
-    if (stage === 'applied') {
-      const candidate = pipelineData.applied.find(c => c.id === id);
-      if (window.confirm(`Review candidate ${name}? Confirm scheduling an academic interview.`)) {
-        // Move from Applied to Interviewed
-        setPipelineData(prev => ({
-          ...prev,
-          applied: prev.applied.filter(c => c.id !== id),
-          interviewed: [
-            {
-              id: `int-${Date.now()}`,
-              name: candidate.name,
-              course: candidate.course,
-              time: 'Aug 28, 11 AM',
-              detail: 'Zoom Meeting',
-              type: 'video',
-              date: 'Aug 28, 2023'
-            },
-            ...prev.interviewed
-          ]
-        }));
+  const handleStatusChange = async (id, name, newStatus) => {
+    const confirmMessage = newStatus === 'approved' 
+      ? `Approve enrollment for candidate ${name}? A student profile will be generated automatically in the directory.`
+      : `Mark candidate ${name} status as ${newStatus}?`;
+
+    if (window.confirm(confirmMessage)) {
+      try {
+        await updateAdmission(id, { status: newStatus });
+        fetchAdmissionsData();
+        if (newStatus === 'approved') {
+          alert(`Candidate ${name} has been enrolled successfully!`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Error updating candidate status.');
       }
-    } else if (stage === 'reviewing') {
-      if (window.confirm(`Approve enrollment for candidate ${name}?`)) {
-        // Remove from reviewing (enrolling)
-        setPipelineData(prev => ({
-          ...prev,
-          reviewing: prev.reviewing.filter(c => c.id !== id)
-        }));
-        alert(`Candidate ${name} has been enrolled successfully! Batches will allocate soon.`);
+    }
+  };
+
+  const handleDeleteApplication = async (id, name) => {
+    if (window.confirm(`Are you sure you want to delete candidate ${name}?`)) {
+      try {
+        await deleteAdmission(id);
+        fetchAdmissionsData();
+      } catch (err) {
+        alert('Error removing candidate records.');
       }
     }
   };
@@ -220,8 +180,45 @@ const Admissions = () => {
   };
 
   const handleExportCSV = () => {
-    alert('Preparing admissions pipeline audit logs... Download started.');
+    const allAdmissions = [...pipelineData.pending, ...pipelineData.approved, ...pipelineData.rejected];
+    if (allAdmissions.length === 0) {
+      alert('No admissions data to export.');
+      return;
+    }
+    const headers = 'Name,Email,Phone,Course,Batch,Address,Message,Status,AppliedDate\n';
+    const csvRows = allAdmissions.map(a => {
+      const name = `"${a.studentName.replace(/"/g, '""')}"`;
+      const email = `"${(a.email || '').replace(/"/g, '""')}"`;
+      const phone = `"${a.phone.replace(/"/g, '""')}"`;
+      const course = `"${a.course.replace(/"/g, '""')}"`;
+      const batch = `"${a.batch.replace(/"/g, '""')}"`;
+      const address = `"${(a.address || '').replace(/"/g, '""')}"`;
+      const message = `"${(a.message || '').replace(/"/g, '""')}"`;
+      const status = `"${a.status}"`;
+      const date = `"${new Date(a.createdAt).toLocaleDateString()}"`;
+      return [name, email, phone, course, batch, address, message, status, date].join(',');
+    }).join('\n');
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + headers + csvRows;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `admissions_pipeline_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
+  if (loading && pipelineData.pending.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+        <p className="text-on-surface-variant font-label-md">Loading pipeline stages...</p>
+      </div>
+    );
+  }
+
+  const totalInquiriesCount = pipelineData.pending.length + pipelineData.approved.length + pipelineData.rejected.length;
 
   return (
     <div className="space-y-stack-lg">
@@ -245,12 +242,12 @@ const Admissions = () => {
             className="flex items-center space-x-2 px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md shadow-sm hover:scale-102 transition-all duration-200 active:scale-95"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>New Application</span>
+            <span>New Inquiry</span>
           </button>
         </div>
       </div>
 
-      {/* Dashboard Stats (Bento Style) */}
+      {/* Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter text-left">
         
         {/* Total Inquiries */}
@@ -260,59 +257,48 @@ const Admissions = () => {
             <span className="material-symbols-outlined text-primary">contact_support</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-headline-xl font-headline-xl text-primary leading-none font-bold">142</h3>
+            <h3 className="text-headline-xl font-headline-xl text-primary leading-none font-bold">{totalInquiriesCount}</h3>
             <p className="text-body-sm text-on-surface-variant mt-2 flex items-center">
-              <span className="text-tertiary font-bold flex items-center mr-1">
-                <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                12%
-              </span> 
-              vs last month
+              Active Database Records
             </p>
           </div>
         </div>
 
-        {/* Applications */}
+        {/* Pending Inquiries */}
         <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-44">
           <div className="flex justify-between">
-            <span className="text-on-surface-variant font-label-sm uppercase tracking-widest text-[11px]">Applications</span>
+            <span className="text-on-surface-variant font-label-sm uppercase tracking-widest text-[11px]">Pending</span>
             <span className="material-symbols-outlined text-tertiary">assignment</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-headline-xl font-headline-xl text-on-surface leading-none font-bold">84</h3>
-            <p className="text-body-sm text-on-surface-variant mt-2 flex items-center">
-              <span className="text-tertiary font-bold flex items-center mr-1">
-                <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                5%
-              </span> 
-              vs last month
+            <h3 className="text-headline-xl font-headline-xl text-on-surface leading-none font-bold">{pipelineData.pending.length}</h3>
+            <p className="text-body-sm text-on-surface-variant mt-2">
+              Waiting for interview & approval
             </p>
           </div>
         </div>
 
-        {/* Waitlisted */}
-        <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-44">
-          <div className="flex justify-between">
-            <span className="text-on-surface-variant font-label-sm uppercase tracking-widest text-[11px]">Waitlisted</span>
-            <span className="material-symbols-outlined text-outline">hourglass_empty</span>
-          </div>
-          <div className="mt-4">
-            <h3 className="text-headline-xl font-headline-xl text-on-surface leading-none font-bold">18</h3>
-            <p className="text-body-sm text-on-surface-variant mt-2">Currently under review</p>
-          </div>
-        </div>
-
-        {/* New Enrolled */}
+        {/* Approved Admissions */}
         <div className="bg-primary-container/10 p-stack-lg rounded-xl border border-primary/20 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-44">
           <div className="flex justify-between">
-            <span className="text-primary font-label-sm uppercase tracking-widest text-[11px]">New Enrolled</span>
+            <span className="text-primary font-label-sm uppercase tracking-widest text-[11px]">Approved (Students)</span>
             <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
           </div>
           <div className="mt-4">
-            <h3 className="text-headline-xl font-headline-xl text-primary leading-none font-bold">52</h3>
-            <div className="w-full bg-primary-container/20 h-2 rounded-full mt-4">
-              <div className="bg-primary h-2 rounded-full w-[65%]"></div>
-            </div>
-            <p className="text-body-sm text-primary mt-2">65% Target achieved</p>
+            <h3 className="text-headline-xl font-headline-xl text-primary leading-none font-bold">{pipelineData.approved.length}</h3>
+            <p className="text-body-sm text-primary mt-2">Registered in student directory</p>
+          </div>
+        </div>
+
+        {/* Rejected Inquiries */}
+        <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-44">
+          <div className="flex justify-between">
+            <span className="text-on-surface-variant font-label-sm uppercase tracking-widest text-[11px]">Rejected</span>
+            <span className="material-symbols-outlined text-outline">cancel</span>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-headline-xl font-headline-xl text-on-surface leading-none font-bold">{pipelineData.rejected.length}</h3>
+            <p className="text-body-sm text-on-surface-variant mt-2">Retracted or rejected logs</p>
           </div>
         </div>
 
@@ -322,191 +308,168 @@ const Admissions = () => {
       <div className="space-y-stack-md text-left">
         <div className="flex items-center justify-between">
           <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Application Stages</h3>
-          <div className="flex space-x-2">
-            <button className="p-2 rounded hover:bg-surface-container text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined">view_kanban</span>
-            </button>
-            <button className="p-2 rounded hover:bg-surface-container text-on-surface-variant flex items-center justify-center">
-              <span className="material-symbols-outlined">format_list_bulleted</span>
-            </button>
-          </div>
         </div>
 
         <div className="flex space-x-gutter overflow-x-auto pb-6 pipeline-scroll custom-scrollbar">
           
-          {/* Column: Applied */}
-          <div className="min-w-[320px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[500px]">
+          {/* Column: Pending Inquiries */}
+          <div className="min-w-[340px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[520px]">
             <div className="flex justify-between items-center mb-4 px-2 shrink-0">
               <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-outline"></span>
-                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Applied</span>
-                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.applied.length}</span>
+                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Pending Inquiries</span>
+                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.pending.length}</span>
               </div>
-              <button className="text-on-surface-variant hover:text-primary flex items-center justify-center"><span className="material-symbols-outlined">more_horiz</span></button>
             </div>
             
             <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-              {pipelineData.applied.map((app) => (
-                <div key={app.id} className="glass-card p-4 rounded-lg shadow-sm hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-3">
+              {pipelineData.pending.map((app) => (
+                <div key={app._id} className="glass-card p-4 rounded-lg shadow-sm hover:shadow-md transition-all relative group">
+                  <button 
+                    onClick={() => handleDeleteApplication(app._id, app.studentName)}
+                    className="absolute top-2 right-2 text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                    title="Delete Record"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                  <div className="flex justify-between items-start mb-3 pr-4">
                     <span className="text-[10px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-full font-bold uppercase">{app.course}</span>
-                    <span className="text-[10px] text-on-surface-variant">{app.time}</span>
+                    <span className="text-[10px] text-on-surface-variant">{new Date(app.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{app.name}</h4>
-                  <p className="text-body-sm text-on-surface-variant mt-1 font-light">{app.email}</p>
+                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{app.studentName}</h4>
+                  <p className="text-body-sm text-on-surface-variant mt-1 font-light">{app.email || app.phone}</p>
+                  {app.message && (
+                    <p className="text-[11px] bg-surface-container p-2 rounded text-on-surface-variant mt-2 italic font-light">
+                      "{app.message}"
+                    </p>
+                  )}
                   <div className="mt-4 pt-3 border-t border-outline-variant flex justify-between items-center">
-                    <div className="flex -space-x-2">
-                      {app.reviewerImage ? (
-                        <img 
-                          alt="Reviewer" 
-                          className="w-6 h-6 rounded-full border-2 border-surface object-cover" 
-                          src={app.reviewerImage}
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-outline-variant flex items-center justify-center text-[9px] text-on-surface font-bold border border-surface">
-                          {app.reviewerInitials}
-                        </div>
-                      )}
-                    </div>
                     <button 
-                      onClick={() => handleReviewCandidate(app.name, 'applied', app.id)}
-                      className="text-primary font-label-sm hover:underline font-bold text-xs"
+                      onClick={() => handleStatusChange(app._id, app.studentName, 'rejected')}
+                      className="text-error font-label-sm hover:underline font-bold text-xs"
                     >
-                      Review
+                      Reject
+                    </button>
+                    <button 
+                      onClick={() => handleStatusChange(app._id, app.studentName, 'approved')}
+                      className="bg-primary text-on-primary px-3 py-1.5 rounded text-[11px] font-bold hover:scale-102 transition-transform active:scale-95"
+                    >
+                      Approve & Enroll
                     </button>
                   </div>
                 </div>
               ))}
-              {pipelineData.applied.length === 0 && (
+              {pipelineData.pending.length === 0 && (
                 <div className="p-8 text-center text-xs text-on-surface-variant/70 font-light border border-dashed border-outline-variant/60 rounded-lg">
-                  No applicants at this stage.
+                  No pending applicants at this stage.
                 </div>
               )}
             </div>
           </div>
 
-          {/* Column: Interview Scheduled */}
-          <div className="min-w-[320px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[500px]">
-            <div className="flex justify-between items-center mb-4 px-2 shrink-0">
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
-                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Interview Scheduled</span>
-                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.interviewed.length}</span>
-              </div>
-              <button className="text-on-surface-variant hover:text-primary flex items-center justify-center"><span className="material-symbols-outlined">more_horiz</span></button>
-            </div>
-            
-            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-              {pipelineData.interviewed.map((int) => (
-                <div key={int.id} className="glass-card p-4 rounded-lg shadow-sm border-l-4 border-primary">
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] bg-primary-container/20 text-primary px-2 py-0.5 rounded-full font-bold uppercase">{int.course}</span>
-                    <span className="text-[10px] text-primary font-bold">{int.time}</span>
-                  </div>
-                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{int.name}</h4>
-                  <p className="text-body-sm text-on-surface-variant mt-1 flex items-center gap-1 font-light">
-                    <span className="material-symbols-outlined text-[14px]">
-                      {int.type === 'video' ? 'videocam' : 'location_on'}
-                    </span> 
-                    {int.detail}
-                  </p>
-                  <div className="mt-4 pt-3 border-t border-outline-variant flex justify-between items-center">
-                    <div className="flex items-center text-on-surface-variant">
-                      <span className="material-symbols-outlined text-[16px] mr-1">calendar_today</span>
-                      <span className="text-[10px] font-semibold">{int.date || 'Aug 24, 2023'}</span>
-                    </div>
-                    <button 
-                      onClick={() => alert(`Rescheduling session for candidate: ${int.name}`)}
-                      className="bg-primary text-on-primary px-3 py-1 rounded text-[10px] font-bold active:scale-95 duration-100"
-                    >
-                      Reschedule
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {pipelineData.interviewed.length === 0 && (
-                <div className="p-8 text-center text-xs text-on-surface-variant/70 font-light border border-dashed border-outline-variant/60 rounded-lg">
-                  No interviews scheduled.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Column: Under Review */}
-          <div className="min-w-[320px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[500px]">
-            <div className="flex justify-between items-center mb-4 px-2 shrink-0">
-              <div className="flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-tertiary"></span>
-                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Reviewing</span>
-                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.reviewing.length}</span>
-              </div>
-              <button className="text-on-surface-variant hover:text-primary flex items-center justify-center"><span className="material-symbols-outlined">more_horiz</span></button>
-            </div>
-            
-            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-              {pipelineData.reviewing.map((rev) => (
-                <div key={rev.id} className="glass-card p-4 rounded-lg shadow-sm border-l-4 border-tertiary">
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-[10px] bg-tertiary-container/20 text-tertiary px-2 py-0.5 rounded-full font-bold uppercase">{rev.course}</span>
-                    <span className="text-[10px] text-tertiary font-bold">{rev.time}</span>
-                  </div>
-                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{rev.name}</h4>
-                  <p className="text-body-sm text-on-surface-variant mt-1 font-light">{rev.detail}</p>
-                  <div className="mt-4 pt-3 border-t border-outline-variant flex justify-between items-center">
-                    <button 
-                      onClick={() => alert(`Flagging background check issues for ${rev.name}...`)}
-                      className="text-error font-label-sm hover:underline text-xs font-bold"
-                    >
-                      Flag Issue
-                    </button>
-                    <button 
-                      onClick={() => handleReviewCandidate(rev.name, 'reviewing', rev.id)}
-                      className="bg-tertiary text-on-tertiary px-3 py-1 rounded text-[10px] font-bold active:scale-95 duration-100"
-                    >
-                      Enroll
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {pipelineData.reviewing.length === 0 && (
-                <div className="p-8 text-center text-xs text-on-surface-variant/70 font-light border border-dashed border-outline-variant/60 rounded-lg">
-                  No candidate folders under active review.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Column: Enrolled */}
-          <div className="min-w-[320px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[500px]">
+          {/* Column: Approved Admissions */}
+          <div className="min-w-[340px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[520px]">
             <div className="flex justify-between items-center mb-4 px-2 shrink-0">
               <div className="flex items-center space-x-2">
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Enrolled</span>
-                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">42</span>
+                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Approved Admissions</span>
+                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.approved.length}</span>
               </div>
-              <button className="text-on-surface-variant hover:text-primary flex items-center justify-center"><span className="material-symbols-outlined">more_horiz</span></button>
             </div>
             
             <div className="space-y-3 overflow-y-auto pr-1 flex-1">
-              <div className="bg-white/40 p-4 rounded-lg border border-dashed border-outline-variant opacity-80">
-                <div className="flex items-center justify-center py-8 flex-col text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[32px] mb-2 text-primary">verified_user</span>
-                  <p className="font-label-sm text-center leading-snug font-bold">Batch finalized for <br/> Sept Intake</p>
+              {pipelineData.approved.map((int) => (
+                <div key={int._id} className="glass-card p-4 rounded-lg shadow-sm border-l-4 border-primary relative group">
+                  <button 
+                    onClick={() => handleDeleteApplication(int._id, int.studentName)}
+                    className="absolute top-2 right-2 text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                    title="Delete Record"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                  <div className="flex justify-between items-start mb-3 pr-4">
+                    <span className="text-[10px] bg-primary-container/20 text-primary px-2 py-0.5 rounded-full font-bold uppercase">{int.course}</span>
+                    <span className="text-[10px] text-primary font-bold">{int.batch}</span>
+                  </div>
+                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{int.studentName}</h4>
+                  <p className="text-body-sm text-on-surface-variant mt-1 font-light">{int.email || int.phone}</p>
+                  <div className="mt-4 pt-3 border-t border-outline-variant flex justify-between items-center">
+                    <span className="text-[10px] text-green-600 flex items-center font-bold">
+                      <span className="material-symbols-outlined text-[14px] mr-1">check_circle</span> Active Student
+                    </span>
+                    <button 
+                      onClick={() => handleStatusChange(int._id, int.studentName, 'rejected')}
+                      className="text-error font-label-sm hover:underline text-xs"
+                    >
+                      Reject Student
+                    </button>
+                  </div>
                 </div>
+              ))}
+              {pipelineData.approved.length === 0 && (
+                <div className="p-8 text-center text-xs text-on-surface-variant/70 font-light border border-dashed border-outline-variant/60 rounded-lg">
+                  No approved admissions.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Column: Rejected Inquiries */}
+          <div className="min-w-[340px] bg-surface-container-low rounded-xl p-4 flex flex-col max-h-[600px] h-[520px]">
+            <div className="flex justify-between items-center mb-4 px-2 shrink-0">
+              <div className="flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                <span className="font-label-md text-label-md text-on-surface font-bold uppercase tracking-wide">Rejected Applications</span>
+                <span className="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">{pipelineData.rejected.length}</span>
               </div>
+            </div>
+            
+            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+              {pipelineData.rejected.map((rev) => (
+                <div key={rev._id} className="glass-card p-4 rounded-lg shadow-sm border-l-4 border-red-500 relative group">
+                  <button 
+                    onClick={() => handleDeleteApplication(rev._id, rev.studentName)}
+                    className="absolute top-2 right-2 text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                    title="Delete Record"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                  <div className="flex justify-between items-start mb-3 pr-4">
+                    <span className="text-[10px] bg-outline-variant text-on-surface-variant px-2 py-0.5 rounded-full font-bold uppercase">{rev.course}</span>
+                  </div>
+                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{rev.studentName}</h4>
+                  <p className="text-body-sm text-on-surface-variant mt-1 font-light">{rev.email || rev.phone}</p>
+                  <div className="mt-4 pt-3 border-t border-outline-variant flex justify-between items-center">
+                    <button 
+                      onClick={() => handleStatusChange(rev._id, rev.studentName, 'pending')}
+                      className="text-primary font-label-sm hover:underline text-xs font-bold"
+                    >
+                      Restore to Pending
+                    </button>
+                    <button 
+                      onClick={() => handleStatusChange(rev._id, rev.studentName, 'approved')}
+                      className="bg-secondary-container text-primary px-3 py-1 rounded text-[10px] font-bold hover:scale-102 active:scale-95"
+                    >
+                      Re-approve & Enroll
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {pipelineData.rejected.length === 0 && (
+                <div className="p-8 text-center text-xs text-on-surface-variant/70 font-light border border-dashed border-outline-variant/60 rounded-lg">
+                  No rejected applications recorded.
+                </div>
+              )}
             </div>
           </div>
 
         </div>
       </div>
 
-      {/* Recent Activity / Action Table */}
+      {/* Follow-up List */}
       <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm text-left">
         <div className="p-6 border-b border-outline-variant flex justify-between items-center">
           <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Follow-up List</h3>
-          <div className="flex space-x-2">
-            <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full text-xs font-bold">3 High Priority</span>
-          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -514,7 +477,7 @@ const Admissions = () => {
               <tr>
                 <th className="px-6 py-4 font-semibold">Candidate</th>
                 <th className="px-6 py-4 font-semibold">Course</th>
-                <th className="px-6 py-4 font-semibold">Last Interaction</th>
+                <th className="px-6 py-4 font-semibold">Message/Remarks</th>
                 <th className="px-6 py-4 font-semibold">Next Step</th>
                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
@@ -534,7 +497,7 @@ const Admissions = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-medium text-on-surface">{fol.course}</td>
-                  <td className="px-6 py-4">{fol.lastInteraction}</td>
+                  <td className="px-6 py-4 max-w-xs truncate">{fol.lastInteraction}</td>
                   <td className="px-6 py-4">
                     <span className="bg-secondary-container text-on-secondary-container px-2 py-1 rounded text-[10px] font-bold">
                       {fol.nextStep}
@@ -543,13 +506,13 @@ const Admissions = () => {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-1">
                       <button 
-                        onClick={() => handleContactAction('phone call', fol.name)}
+                        onClick={() => handleContactAction(`phone call (${fol.phone || 'no number'})`, fol.name)}
                         className="p-2 text-primary hover:bg-primary-container/20 rounded-full transition-colors flex items-center justify-center"
                       >
                         <span className="material-symbols-outlined text-[18px]">phone</span>
                       </button>
                       <button 
-                        onClick={() => handleContactAction('work email dispatch', fol.name)}
+                        onClick={() => handleContactAction(`email dispatch (${fol.email || 'no email'})`, fol.name)}
                         className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors flex items-center justify-center"
                       >
                         <span className="material-symbols-outlined text-[18px]">mail</span>
@@ -558,17 +521,15 @@ const Admissions = () => {
                   </td>
                 </tr>
               ))}
+              {followups.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center py-6 text-on-surface-variant">
+                    No active candidates in the pipeline list.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-        </div>
-        <div className="p-4 bg-surface-container-low flex justify-center border-t border-outline-variant/30">
-          <button 
-            onClick={() => alert('Reviewing deep history logs of admissions campaigns...')}
-            className="text-primary font-label-md flex items-center hover:underline font-bold text-sm"
-          >
-            View All Admissions Activity 
-            <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span>
-          </button>
         </div>
       </div>
 
@@ -586,7 +547,7 @@ const Admissions = () => {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal}></div>
           <div className="relative w-full max-w-xl bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in">
             <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low text-left">
-              <h3 className="font-headline-sm text-headline-sm">Record New Student Application</h3>
+              <h3 className="font-headline-sm text-headline-sm">Record New Student Inquiry</h3>
               <button 
                 className="p-2 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
                 onClick={handleCloseModal}
@@ -598,89 +559,125 @@ const Admissions = () => {
             <form onSubmit={handleCreateApplication} className="p-stack-md space-y-4 text-left">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 md:col-span-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block uppercase tracking-wider">First Name</label>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">First Name *</label>
                   <input 
-                    name="firstName"
-                    value={newApp.firstName}
+                    name="firstName" 
+                    type="text" 
+                    required 
+                    value={newApp.firstName} 
                     onChange={handleInputChange}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                    placeholder="Enter first name" 
-                    type="text"
-                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                    placeholder="Enter first name"
                   />
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block uppercase tracking-wider">Last Name</label>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Last Name *</label>
                   <input 
-                    name="lastName"
-                    value={newApp.lastName}
+                    name="lastName" 
+                    type="text" 
+                    required 
+                    value={newApp.lastName} 
                     onChange={handleInputChange}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                    placeholder="Enter last name" 
-                    type="text"
-                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                    placeholder="Enter last name"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Email Address</label>
+                  <input 
+                    name="email" 
+                    type="email" 
+                    value={newApp.email} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                    placeholder="name@example.com"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Phone Number *</label>
+                  <input 
+                    name="phone" 
+                    type="tel" 
+                    required 
+                    value={newApp.phone} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Preferred Course</label>
+                  <select 
+                    name="course" 
+                    value={newApp.course} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                  >
+                    {courses.map(course => (
+                      <option key={course._id} value={course.title}>{course.title}</option>
+                    ))}
+                    {courses.length === 0 && (
+                      <>
+                        <option value="Basic Computer">Basic Computer</option>
+                        <option value="DCA">DCA</option>
+                        <option value="PGDCA">PGDCA</option>
+                        <option value="Tally Prime">Tally Prime</option>
+                        <option value="MS Office">MS Office</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Preferred Batch</label>
+                  <select 
+                    name="batch" 
+                    value={newApp.batch} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                  >
+                    <option value="Jan 2024 (Morning)">Jan 2024 (Morning)</option>
+                    <option value="Jan 2024 (Evening)">Jan 2024 (Evening)</option>
+                    <option value="Jan 2024 (Weekend)">Jan 2024 (Weekend)</option>
+                    <option value="Feb 2024 (Evening)">Feb 2024 (Evening)</option>
+                    <option value="Jun 2024">Jun 2024</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Address</label>
+                  <input 
+                    name="address" 
+                    type="text" 
+                    value={newApp.address} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface"
+                    placeholder="Enter student address (will map on approval)"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1">Message / Remarks</label>
+                  <textarea 
+                    name="message" 
+                    value={newApp.message} 
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-on-surface h-20"
+                    placeholder="Enter remarks or message details"
                   />
                 </div>
               </div>
               
-              <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block uppercase tracking-wider">Email Address</label>
-                <input 
-                  name="email"
-                  value={newApp.email}
-                  onChange={handleInputChange}
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                  placeholder="candidate@gmail.com" 
-                  type="email"
-                  required
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block uppercase tracking-wider">Course Preference</label>
-                  <select 
-                    name="course"
-                    value={newApp.course}
-                    onChange={handleInputChange}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest cursor-pointer"
-                  >
-                    <option value="Python Dev">Python Dev</option>
-                    <option value="Cybersecurity">Cybersecurity</option>
-                    <option value="Web Design">Web Design</option>
-                    <option value="UI/UX Found.">UI/UX Found.</option>
-                    <option value="Data Science">Data Science</option>
-                    <option value="Digital Marketing">Digital Marketing</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1 block uppercase tracking-wider">Pipeline Stage</label>
-                  <select 
-                    name="stage"
-                    value={newApp.stage}
-                    onChange={handleInputChange}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest cursor-pointer"
-                  >
-                    <option value="applied">Applied</option>
-                    <option value="interviewed">Interview Scheduled</option>
-                    <option value="reviewing">Under Reviewing</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
+              <div className="pt-4 border-t border-outline-variant flex justify-end space-x-3">
                 <button 
-                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={handleCloseModal} 
-                  type="button"
+                  type="button" 
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 border border-outline-variant text-on-surface rounded-lg font-label-md"
                 >
                   Cancel
                 </button>
                 <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-shadow shadow-md active:scale-95" 
-                  type="submit"
+                  type="submit" 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md shadow-sm"
                 >
-                  Create Application
+                  Create Inquiry
                 </button>
               </div>
             </form>

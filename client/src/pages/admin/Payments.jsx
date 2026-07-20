@@ -1,22 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
+import { getPayments, createPayment, updatePayment, deletePayment } from '../../services/paymentService';
 
 const Payments = () => {
-  // 1. Initial Transaction Records State
-  const [transactions, setTransactions] = useState([
-    { id: 'INV-8821', studentName: 'Jane Doe', initials: 'JD', course: 'Python Mastery', date: 'Oct 24, 2023', amount: 1200.00, status: 'Paid', color: 'bg-primary-container text-on-primary-container' },
-    { id: 'INV-8819', studentName: 'Michael Smith', initials: 'MS', course: 'Web Dev Pro', date: 'Oct 23, 2023', amount: 950.00, status: 'Pending', color: 'bg-secondary-container text-on-secondary-container' },
-    { id: 'INV-8815', studentName: 'Alex Rivera', initials: 'AR', course: 'Cloud Arch.', date: 'Oct 21, 2023', amount: 2400.00, status: 'Overdue', color: 'bg-tertiary-container text-on-tertiary-container' },
-    { id: 'INV-8810', studentName: 'Sarah Lee', initials: 'SL', course: 'UI/UX Design', date: 'Oct 20, 2023', amount: 850.00, status: 'Paid', color: 'bg-surface-variant text-on-surface-variant' }
-  ]);
-
-  // Available students database for invoice generation autocomplete search
-  const availableStudents = [
-    { name: 'Liam Henderson', course: 'Python Mastery', email: 'liam.h@email.com' },
-    { name: 'Aria Montgomery', course: 'UI/UX Design', email: 'aria.m@email.com' },
-    { name: 'David Okoro', course: 'Cloud Arch.', email: 'd.okoro@email.com' },
-    { name: 'Sarah Jenkins', course: 'Web Dev Pro', email: 's.jenkins@test.org' },
-    { name: 'Emma Watson', course: 'Digital Marketing', email: 'emma.w@email.com' }
-  ];
+  // 1. Transaction Records State
+  const [transactions, setTransactions] = useState([]);
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Core configuration states
   const [statusFilter, setStatusFilter] = useState('All');
@@ -25,23 +16,84 @@ const Payments = () => {
   // Invoice form state
   const [invoiceForm, setInvoiceForm] = useState({
     studentSearch: '',
-    amount: '0.00',
-    dueDate: '2023-11-10'
+    amount: '0',
+    dueDate: '2026-11-10'
   });
   
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   
   // Stat counters
-  const [revenue, setRevenue] = useState(428590.00);
-  const [pendingFees, setPendingFees] = useState(12450.00);
-  const [invoiceCount, setInvoiceCount] = useState(1204);
+  const [revenue, setRevenue] = useState(0);
+  const [pendingFees, setPendingFees] = useState(0);
+  const [invoiceCount, setInvoiceCount] = useState(0);
 
   // Dynamic UI feedback
   const [toast, setToast] = useState({ visible: false, message: '' });
   const [activeRowPopover, setActiveRowPopover] = useState(null);
 
-  // 2. Event Triggers
+  const fetchPaymentsData = async () => {
+    try {
+      setLoading(true);
+      const [txnsData, usersData] = await Promise.all([
+        getPayments(),
+        api.get('/auth/users')
+      ]);
+
+      // Map backend payments
+      const mappedTxns = txnsData.map(t => {
+        const studentName = t.studentName || 'Student';
+        const initials = studentName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'ST';
+        let color = 'bg-primary-container text-on-primary-container';
+        if (t.status === 'Pending') color = 'bg-secondary-container text-on-secondary-container';
+        else if (t.status === 'Overdue') color = 'bg-tertiary-container text-on-tertiary-container';
+
+        return {
+          id: t.invoiceId,
+          _id: t._id,
+          studentName: studentName,
+          initials,
+          course: t.course,
+          date: t.date || new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          amount: t.amount,
+          status: t.status,
+          color,
+          dueDate: t.dueDate
+        };
+      });
+      setTransactions(mappedTxns);
+
+      // Compute statistics
+      const paidSum = mappedTxns.filter(t => t.status === 'Paid').reduce((acc, curr) => acc + curr.amount, 0);
+      const pendingSum = mappedTxns.filter(t => t.status === 'Pending' || t.status === 'Overdue').reduce((acc, curr) => acc + curr.amount, 0);
+      setRevenue(paidSum);
+      setPendingFees(pendingSum);
+      setInvoiceCount(mappedTxns.length);
+
+      // Map students list for autocompletion
+      const students = usersData.data.filter(u => u.role === 'student').map(u => {
+        // Parse course name from studentId if formatted (ST-2026-101#Full Stack Web Dev#...)
+        const coursePart = (u.studentId || '').split('#')[1] || 'General Course';
+        return {
+          name: u.name,
+          course: coursePart,
+          email: u.email
+        };
+      });
+      setAvailableStudents(students);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch payments records');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPaymentsData();
+  }, []);
+
   const triggerToast = (message) => {
     setToast({ visible: true, message });
     setTimeout(() => {
@@ -49,37 +101,38 @@ const Payments = () => {
     }, 3000);
   };
 
-  const handleApplyQuickInvoice = (e) => {
+  const handleApplyQuickInvoice = async (e) => {
     e.preventDefault();
     if (!invoiceForm.studentSearch || parseFloat(invoiceForm.amount) <= 0) {
       alert('Please select a student and specify an invoice amount.');
       return;
     }
 
-    const initials = invoiceForm.studentSearch.split(' ').map(n => n[0]).join('').toUpperCase();
-    const invId = `INV-${Math.floor(8800 + Math.random() * 100)}`;
-    const newInv = {
-      id: invId,
-      studentName: invoiceForm.studentSearch,
-      initials: initials,
-      course: selectedStudent ? selectedStudent.course : 'General Course',
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      amount: parseFloat(invoiceForm.amount),
-      status: 'Pending',
-      color: 'bg-secondary-container text-on-secondary-container'
-    };
+    try {
+      const studentName = invoiceForm.studentSearch;
+      const course = selectedStudent ? selectedStudent.course : 'General Course';
+      const amount = parseFloat(invoiceForm.amount);
+      const dueDate = invoiceForm.dueDate;
 
-    // Prepend invoice
-    setTransactions(prev => [newInv, ...prev]);
-    setInvoiceCount(prev => prev + 1);
-    setPendingFees(prev => prev + parseFloat(invoiceForm.amount));
-    
-    triggerToast(`Invoice ${invId} successfully generated and dispatched to candidate!`);
-    
-    // Clear form
-    setInvoiceForm({ studentSearch: '', amount: '0.00', dueDate: '2023-11-10' });
-    setSelectedStudent(null);
-    setShowDropdown(false);
+      await createPayment({
+        studentName,
+        course,
+        amount,
+        status: 'Pending',
+        dueDate
+      });
+
+      triggerToast(`Invoice successfully generated and saved!`);
+      // Clear form
+      setInvoiceForm({ studentSearch: '', amount: '0', dueDate: '2026-11-10' });
+      setSelectedStudent(null);
+      setShowDropdown(false);
+      
+      // Refresh list
+      fetchPaymentsData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error generating invoice.');
+    }
   };
 
   const handleStudentSelect = (student) => {
@@ -88,50 +141,41 @@ const Payments = () => {
     setShowDropdown(false);
   };
 
-  const handleUpdateStatus = (invId, nextStatus) => {
-    let transactionAmount = 0;
-    setTransactions(prev => prev.map(txn => {
-      if (txn.id === invId) {
-        transactionAmount = txn.amount;
-        return { ...txn, status: nextStatus };
-      }
-      return txn;
-    }));
-
-    if (nextStatus === 'Paid') {
-      setRevenue(prev => prev + transactionAmount);
-      setPendingFees(prev => Math.max(prev - transactionAmount, 0));
-      triggerToast(`Transaction locked: Invoice ${invId} marked as successfully paid!`);
-    } else {
-      triggerToast(`Invoice ${invId} marked as ${nextStatus}.`);
+  const handleUpdateStatus = async (dbId, invId, nextStatus) => {
+    try {
+      await updatePayment(dbId, { status: nextStatus });
+      triggerToast(`Transaction updated: Invoice ${invId} marked as ${nextStatus}!`);
+      setActiveRowPopover(null);
+      fetchPaymentsData();
+    } catch (err) {
+      alert('Failed to update invoice status.');
     }
-    setActiveRowPopover(null);
   };
 
-  const handleDeleteInvoice = (invId, amount, status) => {
+  const handleDeleteInvoice = async (dbId, invId) => {
     if (window.confirm(`Are you sure you want to retract invoice record ${invId}?`)) {
-      setTransactions(prev => prev.filter(t => t.id !== invId));
-      setInvoiceCount(prev => Math.max(prev - 1, 0));
-      if (status === 'Pending' || status === 'Overdue') {
-        setPendingFees(prev => Math.max(prev - amount, 0));
+      try {
+        await deletePayment(dbId);
+        triggerToast(`Invoice record ${invId} has been successfully deleted.`);
+        setActiveRowPopover(null);
+        fetchPaymentsData();
+      } catch (err) {
+        alert('Failed to delete invoice.');
       }
-      triggerToast(`Invoice record ${invId} has been successfully deleted.`);
     }
-    setActiveRowPopover(null);
   };
 
   const handleExportCSV = () => {
     triggerToast('Compiling financial transaction audit trails... Excel/CSV downloads complete.');
   };
 
-  // 3. Resolving Filter Data
   const getFilteredTransactions = () => {
     return transactions.filter(txn => {
       // 1. Status Filter
       if (statusFilter !== 'Status: All' && statusFilter !== 'All') {
         if (txn.status !== statusFilter) return false;
       }
-      // 2. Search Query (Top/local bar)
+      // 2. Search Query
       if (searchQuery !== '') {
         const query = searchQuery.toLowerCase();
         const matchesName = txn.studentName.toLowerCase().includes(query);
@@ -144,6 +188,15 @@ const Payments = () => {
   };
 
   const filteredTxns = getFilteredTransactions();
+
+  if (loading && transactions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+        <p className="text-on-surface-variant font-label-md">Loading billing profiles...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-stack-lg text-left">
@@ -162,20 +215,6 @@ const Payments = () => {
             <span className="material-symbols-outlined text-[18px]">download</span>
             <span>Export Report</span>
           </button>
-          <button 
-            onClick={() => {
-              const quickInputEl = document.getElementById('quick-invoice-tool');
-              if (quickInputEl) {
-                quickInputEl.scrollIntoView({ behavior: 'smooth' });
-                quickInputEl.classList.add('ring-2', 'ring-primary/40');
-                setTimeout(() => quickInputEl.classList.remove('ring-2', 'ring-primary/40'), 1500);
-              }
-            }}
-            className="px-6 py-2.5 rounded-lg bg-primary text-on-primary font-label-md hover:scale-[1.02] transition-all active:scale-95 duration-100 flex items-center shadow-lg gap-2"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>Create Invoice</span>
-          </button>
         </div>
       </div>
 
@@ -189,15 +228,15 @@ const Payments = () => {
               <span className="material-symbols-outlined text-3xl">account_balance_wallet</span>
             </div>
             <span className="text-success text-sm font-bold flex items-center text-[#2e7d32] bg-green-50 px-2 py-0.5 rounded-full">
-              <span className="material-symbols-outlined text-sm mr-1">trending_up</span> +12.5%
+              Live <span className="material-symbols-outlined text-sm ml-1">check_circle</span>
             </span>
           </div>
           <div className="mt-4">
             <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Total Revenue</p>
             <h3 className="font-headline-xl text-headline-xl text-primary font-bold mt-1 leading-none">
-              ${revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{revenue.toLocaleString()}
             </h3>
-            <p className="text-xs text-on-surface-variant mt-2 font-medium">v.s last month ($381,000)</p>
+            <p className="text-xs text-on-surface-variant mt-2 font-medium">Aggregated Paid Invoices</p>
           </div>
         </div>
 
@@ -207,117 +246,99 @@ const Payments = () => {
             <div className="p-3 bg-tertiary-container/20 rounded-lg text-tertiary flex items-center justify-center">
               <span className="material-symbols-outlined text-3xl">hourglass_empty</span>
             </div>
-            <span className="text-on-surface-variant text-sm font-bold bg-surface-container px-2 py-0.5 rounded-full">
-              {transactions.filter(t => t.status === 'Pending').length + 80} students
-            </span>
           </div>
           <div className="mt-4">
             <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Pending Fees</p>
             <h3 className="font-headline-xl text-headline-xl text-on-surface font-bold mt-1 leading-none">
-              ${pendingFees.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ₹{pendingFees.toLocaleString()}
             </h3>
             <div className="w-full bg-surface-container rounded-full h-1.5 mt-4">
               <div className="bg-tertiary h-1.5 rounded-full transition-all duration-1000" style={{ width: '65%' }}></div>
             </div>
-            <p className="text-xs text-on-surface-variant mt-2 font-medium">65% collected for Q3 Intake</p>
+            <p className="text-xs text-on-surface-variant mt-2 font-medium">Invoices pending payment</p>
           </div>
         </div>
 
-        {/* Invoices Issued */}
+        {/* Invoice Count */}
         <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-44">
           <div className="flex justify-between items-start">
-            <div className="p-3 bg-secondary-container/40 rounded-lg text-secondary flex items-center justify-center">
+            <div className="p-3 bg-secondary-container/25 rounded-lg text-secondary flex items-center justify-center">
               <span className="material-symbols-outlined text-3xl">receipt_long</span>
             </div>
           </div>
           <div className="mt-4">
-            <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Invoices Issued</p>
+            <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Invoices Generated</p>
             <h3 className="font-headline-xl text-headline-xl text-on-surface font-bold mt-1 leading-none">{invoiceCount}</h3>
-            <p className="text-xs text-on-surface-variant mt-2 font-medium">Last updated 2 minutes ago</p>
+            <p className="text-xs text-[#2b7de9] mt-2 font-semibold">Managed transactions in MongoDB</p>
           </div>
         </div>
 
       </div>
 
-      {/* Asymmetric Section: Table & Actions */}
+      {/* Main Ledger Table */}
       <div className="grid grid-cols-12 gap-gutter text-left">
         
-        {/* Transactions Table */}
-        <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col justify-between min-h-[480px]">
-          <div>
-            <div className="p-6 border-b border-outline-variant flex justify-between items-center flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold">Recent Transactions</h4>
-                <div className="relative">
-                  <input 
-                    type="text"
-                    placeholder="Search inside table..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-surface-container-low border border-outline-variant/60 rounded-full text-xs font-light focus:ring-1 focus:ring-primary focus:outline-none w-48"
-                  />
-                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[14px]">search</span>
-                </div>
+        {/* Table Column */}
+        <div className="col-span-12 lg:col-span-8 glass-card rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+          <div className="p-6 border-b border-outline-variant flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-container-low">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Transaction Ledger</h3>
+            <div className="flex space-x-2 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <span className="absolute left-3 top-2.5 text-on-surface-variant material-symbols-outlined text-base">search</span>
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search invoice, student..." 
+                  className="w-full pl-9 pr-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                />
               </div>
-              
-              <div className="flex space-x-2 shrink-0">
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs font-bold bg-surface-container border-none rounded-full px-4 py-1.5 focus:ring-0 cursor-pointer"
-                >
-                  <option value="All">Status: All</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Overdue">Overdue</option>
-                </select>
-                <button 
-                  onClick={() => triggerToast('Applying dynamic transaction ledger orderings...')}
-                  className="p-1.5 hover:bg-surface-container rounded-lg text-on-surface-variant flex items-center justify-center border border-outline-variant/50"
-                >
-                  <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                </button>
-              </div>
+              <select 
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-surface border border-outline-variant text-label-md rounded-lg py-2 px-4 focus:ring-1 focus:ring-primary cursor-pointer text-on-surface"
+              >
+                <option value="All">Status: All</option>
+                <option value="Paid">Paid</option>
+                <option value="Pending">Pending</option>
+                <option value="Overdue">Overdue</option>
+              </select>
             </div>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-surface-container-low/50 text-[11px] uppercase tracking-wider text-on-surface-variant font-bold border-b border-outline-variant/30">
-                    <th className="px-6 py-4">Student</th>
-                    <th className="px-6 py-4">Invoice ID</th>
-                    <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Amount</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant text-body-sm font-light text-on-surface-variant">
-                  {filteredTxns.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-surface-container-low/30 transition-colors relative">
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left">
+              <thead className="bg-surface-container-low text-on-surface-variant font-label-sm uppercase border-b border-outline-variant/30">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Student</th>
+                  <th className="px-6 py-4 font-semibold">Course</th>
+                  <th className="px-6 py-4 font-semibold">Inv Date</th>
+                  <th className="px-6 py-4 font-semibold">Amount</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20 text-body-sm font-light text-on-surface-variant">
+                {filteredTxns.length > 0 ? (
+                  filteredTxns.map((txn) => (
+                    <tr key={txn.id} className="hover:bg-surface-container/30 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs mr-3 shrink-0 ${txn.color}`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${txn.color}`}>
                             {txn.initials}
                           </div>
                           <div>
-                            <p className="font-label-md text-label-md text-on-surface font-bold leading-none">{txn.studentName}</p>
-                            <p className="text-[10px] text-on-surface-variant mt-1 font-semibold">{txn.course}</p>
+                            <p className="font-label-md text-on-surface font-bold leading-none">{txn.studentName}</p>
+                            <p className="text-[10px] text-outline mt-1">{txn.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-on-surface">{txn.id}</td>
+                      <td className="px-6 py-4 font-medium text-on-surface">{txn.course}</td>
                       <td className="px-6 py-4">{txn.date}</td>
-                      <td className="px-6 py-4 font-label-md text-label-md font-bold text-on-surface">
-                        ${txn.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </td>
+                      <td className="px-6 py-4 font-bold text-on-surface">₹{txn.amount.toLocaleString()}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                          txn.status === 'Paid'
-                            ? 'bg-green-100 text-green-700'
-                            : txn.status === 'Pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                          txn.status === 'Paid' ? 'bg-[#e2f9ec] text-[#137333]' : txn.status === 'Pending' ? 'bg-[#fef3c7] text-[#92400e]' : 'bg-[#fce8e6] text-[#c5221f]'
                         }`}>
                           {txn.status}
                         </span>
@@ -325,266 +346,175 @@ const Payments = () => {
                       <td className="px-6 py-4 text-right relative">
                         <button 
                           onClick={() => setActiveRowPopover(activeRowPopover === txn.id ? null : txn.id)}
-                          className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center ml-auto"
+                          className="p-1 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center ml-auto"
                         >
-                          more_vert
+                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
                         </button>
                         
-                        {/* Action Popover Context Dropdown */}
                         {activeRowPopover === txn.id && (
-                          <div className="absolute right-6 top-12 bg-surface rounded-xl border border-outline-variant shadow-xl z-50 py-2 w-44 animate-scale-in text-left">
-                            {txn.status !== 'Paid' && (
-                              <button 
-                                onClick={() => handleUpdateStatus(txn.id, 'Paid')}
-                                className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs text-on-surface flex items-center gap-2 font-semibold"
-                              >
-                                <span className="material-symbols-outlined text-[16px] text-green-600">check_circle</span>
-                                <span>Mark as Paid</span>
-                              </button>
-                            )}
-                            {txn.status === 'Paid' && (
-                              <button 
-                                onClick={() => handleUpdateStatus(txn.id, 'Pending')}
-                                className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs text-on-surface flex items-center gap-2 font-semibold"
-                              >
-                                <span className="material-symbols-outlined text-[16px] text-yellow-600 font-bold">hourglass_empty</span>
-                                <span>Mark as Pending</span>
-                              </button>
-                            )}
+                          <div className="absolute right-6 top-10 w-44 bg-surface border border-outline-variant rounded-lg shadow-xl z-50 py-1 text-left">
                             <button 
-                              onClick={() => triggerToast(`Dispatched payment reminder log to student email address.`)}
-                              className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs text-on-surface flex items-center gap-2 font-semibold"
+                              onClick={() => handleUpdateStatus(txn._id, txn.id, 'Paid')}
+                              className="w-full px-4 py-2 hover:bg-surface-container text-body-sm text-on-surface flex items-center gap-2"
                             >
-                              <span className="material-symbols-outlined text-[16px] text-primary">mail</span>
-                              <span>Send Reminder</span>
+                              <span className="material-symbols-outlined text-success text-base">check_circle</span>
+                              Mark Paid
                             </button>
                             <button 
-                              onClick={() => handleDeleteInvoice(txn.id, txn.amount, txn.status)}
-                              className="w-full text-left px-4 py-2 hover:bg-surface-container text-xs text-error border-t border-outline-variant/30 flex items-center gap-2 font-semibold mt-1"
+                              onClick={() => handleUpdateStatus(txn._id, txn.id, 'Pending')}
+                              className="w-full px-4 py-2 hover:bg-surface-container text-body-sm text-on-surface flex items-center gap-2"
                             >
-                              <span className="material-symbols-outlined text-[16px]">delete</span>
-                              <span>Delete Record</span>
+                              <span className="material-symbols-outlined text-warning text-base">hourglass_empty</span>
+                              Mark Pending
+                            </button>
+                            <button 
+                              onClick={() => handleUpdateStatus(txn._id, txn.id, 'Overdue')}
+                              className="w-full px-4 py-2 hover:bg-surface-container text-body-sm text-on-surface flex items-center gap-2"
+                            >
+                              <span className="material-symbols-outlined text-error text-base">warning</span>
+                              Mark Overdue
+                            </button>
+                            <div className="h-[1px] bg-outline-variant/30 my-1"></div>
+                            <button 
+                              onClick={() => handleDeleteInvoice(txn._id, txn.id)}
+                              className="w-full px-4 py-2 hover:bg-surface-container text-body-sm text-error flex items-center gap-2 font-bold"
+                            >
+                              <span className="material-symbols-outlined text-base">delete</span>
+                              Retract Invoice
                             </button>
                           </div>
                         )}
                       </td>
                     </tr>
-                  ))}
-                  {filteredTxns.length === 0 && (
-                    <tr>
-                      <td colSpan="6" className="py-16 text-center text-on-surface-variant font-light text-sm">
-                        No financial transactions found. Try adjusting filter fields.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <div className="p-6 bg-surface-container-low/50 text-center border-t border-outline-variant/30">
-            <button 
-              onClick={() => triggerToast('Fetching complete academic transactions repository ledger list...')}
-              className="text-primary font-label-md font-bold text-sm hover:underline"
-            >
-              View All Transactions
-            </button>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center py-12 text-on-surface-variant font-body-sm">
+                      No matching transaction entries found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* Right Sidebar: Quick Actions & Invoicing */}
-        <div className="col-span-12 lg:col-span-4 space-y-gutter">
-          
-          {/* Quick Invoicing Tool */}
-          <div 
-            id="quick-invoice-tool"
-            className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm space-y-4"
-          >
-            <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold border-b border-outline-variant/30 pb-2">
-              Generate Quick Invoice
-            </h4>
+        {/* Quick Invoice Dispatch bento widget */}
+        <div id="quick-invoice-tool" className="col-span-12 lg:col-span-4 glass-card p-6 rounded-xl border border-outline-variant flex flex-col justify-between">
+          <div className="text-left">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-1">Quick Invoice Tool</h3>
+            <p className="text-body-sm text-on-surface-variant font-light mb-6">Dispatches an invoice to student profiles instantly.</p>
             
             <form onSubmit={handleApplyQuickInvoice} className="space-y-4">
+              
+              {/* Autocomplete Search input */}
               <div className="relative">
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">
-                  Student Search
-                </label>
-                <div className="relative">
-                  <input 
-                    type="text"
-                    value={invoiceForm.studentSearch}
-                    onChange={(e) => {
-                      setInvoiceForm(prev => ({ ...prev, studentSearch: e.target.value }));
-                      setShowDropdown(e.target.value.length > 0);
-                    }}
-                    onFocus={() => setShowDropdown(invoiceForm.studentSearch.length > 0)}
-                    className="w-full px-4 py-2.5 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-sm font-medium bg-surface-container-lowest focus:outline-none"
-                    placeholder="Start typing student name..."
-                    required
-                  />
-                  {invoiceForm.studentSearch && (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setInvoiceForm(prev => ({ ...prev, studentSearch: '' }));
-                        setSelectedStudent(null);
-                        setShowDropdown(false);
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Autocomplete Dropdown */}
-                {showDropdown && (
-                  <div className="absolute left-0 right-0 top-16 bg-surface rounded-xl border border-outline-variant shadow-2xl z-50 max-h-48 overflow-y-auto mt-1">
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1 tracking-wide">Student Search</label>
+                <input 
+                  type="text" 
+                  value={invoiceForm.studentSearch}
+                  onChange={(e) => {
+                    setInvoiceForm(prev => ({ ...prev, studentSearch: e.target.value }));
+                    setShowDropdown(true);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder="Type student name..." 
+                  required
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                
+                {/* Search Dropdown list */}
+                {showDropdown && availableStudents.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-surface border border-outline-variant rounded-lg shadow-xl z-50 divide-y divide-outline-variant/30">
                     {availableStudents
                       .filter(s => s.name.toLowerCase().includes(invoiceForm.studentSearch.toLowerCase()))
-                      .map((stu) => (
-                        <div 
-                          key={stu.name}
-                          onClick={() => handleStudentSelect(stu)}
-                          className="px-4 py-2.5 hover:bg-surface-container cursor-pointer border-b border-outline-variant/20 last:border-b-0"
+                      .map((student, i) => (
+                        <button 
+                          type="button" 
+                          key={i} 
+                          onClick={() => handleStudentSelect(student)}
+                          className="w-full px-4 py-2 text-left text-body-sm font-light hover:bg-surface-container text-on-surface block"
                         >
-                          <p className="text-xs font-bold text-on-surface leading-none">{stu.name}</p>
-                          <p className="text-[10px] text-on-surface-variant mt-1">{stu.course} • {stu.email}</p>
-                        </div>
+                          <p className="font-semibold">{student.name}</p>
+                          <p className="text-[10px] text-on-surface-variant mt-0.5">{student.course}</p>
+                        </button>
                       ))}
-                    {availableStudents.filter(s => s.name.toLowerCase().includes(invoiceForm.studentSearch.toLowerCase())).length === 0 && (
-                      <div className="px-4 py-3 text-xs text-on-surface-variant font-light italic">
-                        No registered candidates match.
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">
-                    Amount ($)
-                  </label>
+              {/* Course Detail (Readonly preview) */}
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1 tracking-wide">Allocated Course</label>
+                <input 
+                  type="text" 
+                  value={selectedStudent ? selectedStudent.course : 'General Fee'} 
+                  readOnly 
+                  className="w-full px-4 py-2.5 bg-surface-container border border-outline-variant/30 rounded-lg text-body-sm text-on-surface-variant cursor-not-allowed"
+                />
+              </div>
+
+              {/* Invoice Amount */}
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1 tracking-wide">Amount (INR)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 font-bold text-on-surface-variant">₹</span>
                   <input 
-                    type="number"
+                    type="number" 
                     value={invoiceForm.amount}
                     onChange={(e) => setInvoiceForm(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-sm font-bold bg-surface-container-lowest"
-                    min="0"
-                    step="50"
+                    placeholder="INR amount" 
                     required
+                    min="1"
+                    className="w-full pl-7 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">
-                    Due Date
-                  </label>
-                  <input 
-                    type="date"
-                    value={invoiceForm.dueDate}
-                    onChange={(e) => setInvoiceForm(prev => ({ ...prev, dueDate: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 text-body-sm font-medium bg-surface-container-lowest cursor-pointer"
-                    required
-                  />
-                </div>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1 tracking-wide">Due Date</label>
+                <input 
+                  type="date" 
+                  value={invoiceForm.dueDate}
+                  onChange={(e) => setInvoiceForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  required
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
+                />
               </div>
 
               <button 
-                type="submit"
-                className="w-full py-3 bg-secondary-container text-on-secondary-container font-bold rounded-lg hover:bg-secondary-container/80 transition-all active:scale-95 duration-100 flex items-center justify-center gap-2"
+                type="submit" 
+                className="w-full py-3 bg-primary text-on-primary rounded-lg font-label-md shadow-md hover:scale-[1.01] active:scale-95 duration-100 flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-[18px]">send</span> 
-                <span>Send Invoice</span>
+                <span className="material-symbols-outlined text-base">mail</span>
+                Dispatch Invoice
               </button>
+
             </form>
           </div>
-
-          {/* Payment Distribution */}
-          <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm space-y-4">
-            <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold border-b border-outline-variant/30 pb-2">
-              Method Distribution
-            </h4>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-primary mr-3 shrink-0"></span>
-                  <span className="text-body-sm font-light text-on-surface">Credit/Debit Card</span>
-                </div>
-                <span className="font-bold text-body-sm text-on-surface">62%</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-tertiary mr-3 shrink-0"></span>
-                  <span className="text-body-sm font-light text-on-surface">Bank Transfer</span>
-                </div>
-                <span className="font-bold text-body-sm text-on-surface">28%</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 rounded-full bg-secondary mr-3 shrink-0"></span>
-                  <span className="text-body-sm font-light text-on-surface">Installment Plans</span>
-                </div>
-                <span className="font-bold text-body-sm text-on-surface">10%</span>
-              </div>
-
-              {/* Simple visual chart representation */}
-              <div className="flex w-full h-3 rounded-full overflow-hidden mt-6 bg-surface-container border border-outline-variant/30 shrink-0">
-                <div className="bg-primary transition-all duration-1000" style={{ width: '62%' }} title="Card: 62%"></div>
-                <div className="bg-tertiary transition-all duration-1000" style={{ width: '28%' }} title="Bank: 28%"></div>
-                <div className="bg-secondary transition-all duration-1000" style={{ width: '10%' }} title="Installment: 10%"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Financial Support Card */}
-          <div 
-            onClick={() => triggerToast('Connecting with centralized finance support services...')}
-            className="relative rounded-xl overflow-hidden h-40 group cursor-pointer shadow-lg active:scale-[0.98] transition-all"
-            style={{
-              backgroundImage: `linear-gradient(rgba(0,97,164,0.85), rgba(0,97,164,0.95)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuBMp8mMHqnDeR7t-SDCTV35mrDrnLGONm3KCbq_1cj3QBPxXihN5XxVr9Bde51VJ2rNEFhVI0-iKBU3Dw_643KnryGg1ylP1rX8YcIzwD4zs1797I6JvPkuyXbnEXraPRY78ldHu4T0IYQCBe6ImysGNiJdmofu2cgOpwhqrUZRuwKu5oIR2URsh14xRJed6YWfBLJKXEfh0EItC89lz4eWO1Yeahp8EbUiTuwWOQ5ez-pHThtA6rKcuMhxzRSxW8pq-8Uk8FIPMtFM')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            <div className="absolute inset-0 p-6 flex flex-col justify-end text-left">
-              <h5 className="text-on-primary font-headline-sm font-bold">Financial Support</h5>
-              <p className="text-on-primary/80 text-body-sm font-light mt-1 leading-snug">
-                Speak with our accounting team for custom reporting.
-              </p>
-            </div>
-          </div>
-
         </div>
 
       </div>
 
-      {/* Slide-Up Notification Toast */}
-      <div 
-        className={`fixed bottom-10 right-10 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] border border-outline-variant/20 ${
-          toast.visible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-        }`}
-      >
-        <span className="material-symbols-outlined text-green-400">check_circle</span>
-        <span className="font-label-md text-label-md font-semibold">{toast.message}</span>
-      </div>
+      {/* Popover Background Blocker (Click to close popover) */}
+      {activeRowPopover && (
+        <div 
+          className="fixed inset-0 z-40 bg-transparent" 
+          onClick={() => setActiveRowPopover(null)}
+        />
+      )}
 
-      {/* FAB for Contextual Payment Actions */}
-      <button 
-        onClick={() => triggerToast('Initiating payment request compilation dispatch overlay...')}
-        className="fixed bottom-10 right-10 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform group z-50 border border-primary-fixed"
-      >
-        <span className="material-symbols-outlined text-3xl">currency_exchange</span>
-        <span className="absolute right-16 bg-inverse-surface text-inverse-on-surface px-3 py-1.5 rounded-md text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl border border-outline-variant/25">
-          New Payment Request
-        </span>
-      </button>
+      {/* Toast Notification popup feedback */}
+      {toast.visible && (
+        <div className="fixed bottom-6 right-6 z-50 bg-inverse-surface text-inverse-on-surface px-6 py-3 rounded-lg shadow-lg font-label-md flex items-center space-x-3 border border-outline-variant/30 animate-slide-up">
+          <span className="material-symbols-outlined text-success">check_circle</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
 
     </div>
   );
 };
 
 export default Payments;
-

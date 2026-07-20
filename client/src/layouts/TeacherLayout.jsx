@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../redux/slices/authSlice';
 
 const TeacherLayout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const mainMenuItems = [
@@ -24,8 +28,14 @@ const TeacherLayout = () => {
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout from the Teacher Portal?')) {
+      dispatch(logout());
       navigate('/login');
     }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'TC';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
   const handleStartClass = () => {
@@ -158,15 +168,24 @@ const TeacherLayout = () => {
 
             <div className="flex items-center gap-3 pl-4 border-l border-outline-variant text-left">
               <div className="text-right hidden sm:block">
-                <p className="font-label-md text-label-md font-bold text-on-surface">Prof. Rajesh Kumar</p>
-                <p className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">Senior Faculty</p>
+                <p className="font-label-md text-label-md font-bold text-on-surface">{user?.name || 'Faculty User'}</p>
+                <p className="text-[10px] text-on-surface-variant uppercase tracking-wider font-bold">{user?.teacherId || 'Faculty Member'}</p>
               </div>
-              <img 
-                alt="Teacher Avatar" 
-                className="w-10 h-10 rounded-full object-cover border-2 border-primary-container cursor-pointer select-none"
-                onClick={() => navigate('/teacher/profile')}
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3Gh2GzZoAqcDBJAkfriIGdM0VgXE_pAbhIVKtIqXHgBDTr5hm7zj1TqKZTRFPTfKTGWANQgFpEBey4ZwHwcmoY9jebsly5YVXlUHTEoArN_up6rhSTbgvWUHrD_GPIIDUaImEh76CvrzQLBA-nWQTUuckdl232GvtaJktxMxKymG3jrJ_CfQfbhP_FXcQ2KRAk31m-Vq7YTma12OXkhGXnbXU-DkPAE5nrmAibofkHrWj6wKwv5fm1EONM02vYvLUHaB42YoD91Av"
-              />
+              {user?.profilePhoto || user?.photo ? (
+                <img 
+                  alt="Teacher Avatar" 
+                  className="w-10 h-10 rounded-full object-cover border-2 border-primary-container cursor-pointer select-none"
+                  onClick={() => navigate('/teacher/profile')}
+                  src={user.profilePhoto || user.photo}
+                />
+              ) : (
+                <div 
+                  onClick={() => navigate('/teacher/profile')}
+                  className="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-sm cursor-pointer select-none border-2 border-primary-container"
+                >
+                  {getInitials(user?.name)}
+                </div>
+              )}
             </div>
           </div>
         </header>

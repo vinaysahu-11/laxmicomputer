@@ -1,60 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getReviews, createReview, updateReview, deleteReview } from '../../services/reviewService';
 
 const Reviews = () => {
-  // 1. Initial State Data for Student Reviews
-  const [reviewsList, setReviewsList] = useState([
-    {
-      id: 'rev-1',
-      studentName: 'Sarah Jenkins',
-      course: 'Full Stack Web Development',
-      time: '2 hours ago',
-      rating: 5,
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCUfA65JV4uzymI372Wkby0p4JnhM47dR4uPAOE7DTW0UAtfv-KAiblVuTdjLsXlBKnvJ4FLitgu2Dc3dQicrJ9Ra5F67w0p_sT9Du0_-bUS_zz0QihITjQp3Qfq1q1xf1gAoDBnYaORJQEOx-DDA72uh1M0pfMnc0FHTTCf-zbDXhV854T2wGTEbSpgna5cg-o8v5D7SkVkVBa4HK4KHbbserkoTIngCnHclthdHy4-f1OkHNOI8gc4VaLeM3H8_YBUCH5pgE3M-qH',
-      feedback: 'The Python curriculum was incredibly well-structured. I went from knowing zero code to building my own automation tools in just 12 weeks. The instructors are clearly industry professionals who care about your career path.',
-      status: 'Pending',
-      verified: true
-    },
-    {
-      id: 'rev-2',
-      studentName: 'Marcus Thorne',
-      course: 'UI/UX Design Masterclass',
-      time: 'Yesterday',
-      rating: 4,
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAfljxNtWGS4s4GOagETHonAmsV3uULTDC8VH9joKuS80C1qf81Vmc6fWPxOfs-Qed9xzDE_JQkZGL28r4jc-YyD4sQyJC5UMlYiOblQlPfJcaBut1j6rt2LMNSdIXgJw6DbiOVhDFe-EVMt1KCpaq50W1bimdMkLMt_2aXLQjevKYt4a0pFMV5l5Jr4XPXi0D15ahxd5MV4dlldc2313HCZTReLiQH6YJkepHHLrGauzK7bIJB6XF0Xw7GWJUgqlNVtSy-6xONOANH',
-      feedback: 'Great course overall, but I felt the final project was a bit rushed. The feedback loop from teachers is amazing though. I\'ve already landed a junior role using my portfolio from this class!',
-      status: 'Approved',
-      verified: true
-    },
-    {
-      id: 'rev-3',
-      studentName: 'Anonymous Learner',
-      course: 'Cloud Architecture',
-      time: '3 days ago',
-      rating: 1,
-      feedback: 'PLEASE REFUND MONEY RIGHT NOW!!!!! COURSE IS NOT GOOD AT ALL!!!!!! TOO MUCH WORK!!!!!! NO HELP FROM ANYONE!!!!!!',
-      status: 'Flagged',
-      flaggedReason: 'Flagged by system: Potential spam or irrelevant content detected. Contains excessive punctuation and non-academic language.',
-      verified: false
-    },
-    {
-      id: 'rev-4',
-      studentName: 'Lucas Thorne',
-      course: 'Data Science Evening',
-      time: '4 days ago',
-      rating: 5,
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAqfD9tJZosq75ltfcDtxI4emDZ3FbP3ifE4H0ztHdL9XTpAQFO3kFMXpX2NO0x4eWlf8HbtHl7P4sEC-9h5nIfp2WBn4NpHv1sK3hC9jvqM4xez8kVrcemC2baUUL7_257j6AXsBvCe8SXlJfs76gUrmpOydYqqpiXCNuluYKIlyyfe7M7KXqqHWw-iGnGA2QO8cuEsRw_LkH2WimouKerjhQvkZiAwg76IbaIQmlEn4SUz0UfwAqkB5WP813sbfxAq127Q6pQYxdt',
-      feedback: 'Deep dive into PyTorch and Pandas. Highly practical with active laboratory assessments. The capstone project was extremely challenging but totally worth it.',
-      status: 'Approved',
-      verified: true
-    }
-  ]);
+  // 1. State Data for Student Reviews
+  const [reviewsList, setReviewsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Moderator Logs state
   const [moderatorLogs, setModeratorLogs] = useState([
-    { id: 'log-1', action: 'Approved "Python for Data..."', time: '10m ago', author: 'Admin Sarah', iconColor: 'bg-primary' },
-    { id: 'log-2', action: 'Rejected 3 spam reviews', time: '1h ago', author: 'System', iconColor: 'bg-error' },
-    { id: 'log-3', action: 'Archived 12 old testimonials', time: '3h ago', author: 'Admin Mike', iconColor: 'bg-tertiary' }
+    { id: 'log-1', action: 'System status synced with MongoDB', time: 'Just now', author: 'System', iconColor: 'bg-primary' }
   ]);
+
+  // Add/Edit review modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [formData, setFormData] = useState({
+    studentName: '',
+    courseName: '',
+    rating: 5,
+    reviewText: '',
+    studentPhoto: '',
+    videoUrl: '',
+    status: 'Pending'
+  });
 
   // View settings and filter parameters
   const [selectedStatus, setSelectedStatus] = useState('All Reviews');
@@ -70,9 +39,109 @@ const Reviews = () => {
   });
 
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [visibleCount, setVisibleCount] = useState(6);
 
-  // 2. Micro-interactions and moderation hooks
+  const fetchReviewsData = async () => {
+    try {
+      setLoading(true);
+      const data = await getReviews(true); // Fetch all reviews (Approved, Pending, Flagged, Archived)
+      
+      const mapped = data.map(r => {
+        // Map avatars or default initials
+        const avatar = r.studentPhoto || `https://lh3.googleusercontent.com/aida-public/AB6AXuCUfA65JV4uzymI372Wkby0p4JnhM47dR4uPAOE7DTW0UAtfv-KAiblVuTdjLsXlBKnvJ4FLitgu2Dc3dQicrJ9Ra5F67w0p_sT9Du0_-bUS_zz0QihITjQp3Qfq1q1xf1gAoDBnYaORJQEOx-DDA72uh1M0pfMnc0FHTTCf-zbDXhV854T2wGTEbSpgna5cg-o8v5D7SkVkVBa4HK4KHbbserkoTIngCnHclthdHy4-f1OkHNOI8gc4VaLeM3H8_YBUCH5pgE3M-qH`;
+        return {
+          id: r._id,
+          _id: r._id,
+          studentName: r.studentName,
+          course: r.courseName,
+          time: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          rating: r.rating,
+          avatar,
+          feedback: r.reviewText,
+          status: r.status,
+          videoUrl: r.videoUrl || '',
+          verified: true
+        };
+      });
+
+      setReviewsList(mapped);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch student reviews');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviewsData();
+  }, []);
+
+  const handleAddReviewClick = () => {
+    setEditingReview(null);
+    setFormData({
+      studentName: '',
+      courseName: '',
+      rating: 5,
+      reviewText: '',
+      studentPhoto: '',
+      videoUrl: '',
+      status: 'Pending'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEditReviewClick = (rev) => {
+    setEditingReview(rev);
+    setFormData({
+      studentName: rev.studentName,
+      courseName: rev.course || '',
+      rating: rev.rating || 5,
+      reviewText: rev.feedback || '',
+      studentPhoto: rev.avatar && !rev.avatar.startsWith('https://lh3.googleusercontent.com') ? rev.avatar : '',
+      videoUrl: rev.videoUrl || '',
+      status: rev.status || 'Pending'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingReview) {
+        await updateReview(editingReview._id, formData);
+        triggerToast(`Review for ${formData.studentName} updated successfully!`, 'success');
+        
+        const newLog = {
+          id: `log-${Date.now()}`,
+          action: `Edited review of "${formData.studentName}"`,
+          time: 'Just now',
+          author: 'Super Admin',
+          iconColor: 'bg-primary'
+        };
+        setModeratorLogs(prev => [newLog, ...prev]);
+      } else {
+        await createReview(formData);
+        triggerToast(`Review for ${formData.studentName} created successfully!`, 'success');
+        
+        const newLog = {
+          id: `log-${Date.now()}`,
+          action: `Created review for "${formData.studentName}"`,
+          time: 'Just now',
+          author: 'Super Admin',
+          iconColor: 'bg-primary'
+        };
+        setModeratorLogs(prev => [newLog, ...prev]);
+      }
+      setIsModalOpen(false);
+      fetchReviewsData();
+    } catch (err) {
+      console.error(err);
+      alert('Error saving review data.');
+    }
+  };
+
   const triggerToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
     setTimeout(() => {
@@ -80,568 +149,498 @@ const Reviews = () => {
     }, 3000);
   };
 
-  const handleApproveReview = (review) => {
-    setReviewsList(prev => prev.map(r => r.id === review.id ? { ...r, status: 'Approved' } : r));
-    
-    // Add log
-    const newLog = {
-      id: `log-${Date.now()}`,
-      action: `Approved "${review.studentName}'s review"`,
-      time: 'Just now',
-      author: 'Super Admin',
-      iconColor: 'bg-primary'
-    };
-    setModeratorLogs(prev => [newLog, ...prev]);
-    
-    triggerToast(`Testimonial from ${review.studentName} has been successfully approved for public website!`, 'success');
+  const handleApproveReview = async (review) => {
+    try {
+      await updateReview(review._id, { status: 'Approved' });
+      
+      const newLog = {
+        id: `log-${Date.now()}`,
+        action: `Approved "${review.studentName}'s review"`,
+        time: 'Just now',
+        author: 'Super Admin',
+        iconColor: 'bg-primary'
+      };
+      setModeratorLogs(prev => [newLog, ...prev]);
+      
+      triggerToast(`Testimonial from ${review.studentName} approved for public website!`, 'success');
+      fetchReviewsData();
+    } catch (err) {
+      alert('Error approving review.');
+    }
   };
 
-  const handleRejectReview = (review) => {
-    setReviewsList(prev => prev.map(r => r.id === review.id ? { ...r, status: 'Archived' } : r));
-    
-    // Add log
-    const newLog = {
-      id: `log-${Date.now()}`,
-      action: `Rejected "${review.studentName}'s review"`,
-      time: 'Just now',
-      author: 'Super Admin',
-      iconColor: 'bg-error'
-    };
-    setModeratorLogs(prev => [newLog, ...prev]);
-    
-    triggerToast(`Testimonial from ${review.studentName} was rejected and moved to Archive.`, 'error');
+  const handleRejectReview = async (review) => {
+    try {
+      await updateReview(review._id, { status: 'Archived' });
+      
+      const newLog = {
+        id: `log-${Date.now()}`,
+        action: `Archived "${review.studentName}'s review"`,
+        time: 'Just now',
+        author: 'Super Admin',
+        iconColor: 'bg-error'
+      };
+      setModeratorLogs(prev => [newLog, ...prev]);
+      
+      triggerToast(`Review from ${review.studentName} archived.`, 'info');
+      fetchReviewsData();
+    } catch (err) {
+      alert('Error archiving review.');
+    }
   };
 
-  const handleUndoApproval = (review) => {
-    setReviewsList(prev => prev.map(r => r.id === review.id ? { ...r, status: 'Pending' } : r));
-    triggerToast(`Approval retracted for ${review.studentName}. Status reverted to Pending.`, 'info');
+  const handleFlagReview = async (review) => {
+    try {
+      await updateReview(review._id, { status: 'Flagged' });
+      
+      const newLog = {
+        id: `log-${Date.now()}`,
+        action: `Flagged "${review.studentName}'s review"`,
+        time: 'Just now',
+        author: 'Super Admin',
+        iconColor: 'bg-tertiary'
+      };
+      setModeratorLogs(prev => [newLog, ...prev]);
+      
+      triggerToast(`Review from ${review.studentName} has been flagged.`, 'warning');
+      fetchReviewsData();
+    } catch (err) {
+      alert('Error flagging review.');
+    }
   };
 
-  const handleArchiveReview = (review) => {
-    setReviewsList(prev => prev.map(r => r.id === review.id ? { ...r, status: 'Archived' } : r));
-    triggerToast(`Testimonial archived successfully.`);
+  const handleDeleteReviewClick = async (review) => {
+    if (window.confirm(`Are you sure you want to permanently delete review from ${review.studentName}?`)) {
+      try {
+        await deleteReview(review._id);
+        
+        const newLog = {
+          id: `log-${Date.now()}`,
+          action: `Deleted "${review.studentName}'s review"`,
+          time: 'Just now',
+          author: 'Super Admin',
+          iconColor: 'bg-error'
+        };
+        setModeratorLogs(prev => [newLog, ...prev]);
+        
+        triggerToast(`Review removed successfully.`, 'error');
+        fetchReviewsData();
+      } catch (err) {
+        alert('Error deleting review.');
+      }
+    }
   };
 
-  const handleClearFilters = () => {
-    setSelectedStatus('All Reviews');
-    setSelectedRating(null);
-    setSearchQuery('');
-    triggerToast('All moderation filters cleared.');
-  };
-
-  const handleExportCSV = () => {
-    triggerToast('Compiling testimonials database log trails... CSV download initialized.');
-  };
-
-  const handleSettingsSaveSubmit = (e) => {
-    e.preventDefault();
-    setIsSettingsOpen(false);
-    document.body.style.overflow = 'auto';
-    triggerToast('Testimonial automation rules applied successfully.');
-  };
-
-  // 3. Data Filters Resolver
   const getFilteredReviews = () => {
-    return reviewsList.filter(item => {
-      // 1. Status dropdown filter
+    return reviewsList.filter(rev => {
+      // 1. Status Filter
       if (selectedStatus !== 'All Reviews') {
-        if (item.status.toLowerCase() !== selectedStatus.toLowerCase()) return false;
+        if (rev.status !== selectedStatus) return false;
       }
-      // 2. Star filter button
+      // 2. Rating Filter
       if (selectedRating !== null) {
-        if (item.rating !== selectedRating) return false;
+        if (rev.rating !== selectedRating) return false;
       }
-      // 3. Search query filter
-      if (searchQuery !== '') {
+      // 3. Search Query
+      if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesName = item.studentName.toLowerCase().includes(query);
-        const matchesCourse = item.course.toLowerCase().includes(query);
-        const matchesFeedback = item.feedback.toLowerCase().includes(query);
-        if (!matchesName && !matchesCourse && !matchesFeedback) return false;
+        const matchesName = rev.studentName.toLowerCase().includes(query);
+        const matchesFeedback = rev.feedback.toLowerCase().includes(query);
+        const matchesCourse = rev.course.toLowerCase().includes(query);
+        if (!matchesName && !matchesFeedback && !matchesCourse) return false;
       }
       return true;
     });
   };
 
   const filteredReviews = getFilteredReviews();
-  const paginatedReviews = filteredReviews.slice(0, visibleCount);
 
-  // Quick stats computed directly from live state
-  const totalReviewsCount = reviewsList.length + 1280; // offset based on baseline
-  const pendingReviewsCount = reviewsList.filter(r => r.status === 'Pending' || r.status === 'Flagged').length;
+  if (loading && reviewsList.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+        <p className="text-on-surface-variant font-label-md">Loading student testimonials...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-stack-lg text-left">
       
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-stack-lg gap-4 text-left">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Reviews Management</h2>
-          <p className="text-body-md text-on-surface-variant mt-1">Moderate and curate student testimonials for the public website.</p>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Testimonials Moderation</h2>
+          <p className="text-body-md text-on-surface-variant mt-1">Audit, approve, and curate user feedback displaying on the public home page.</p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <button 
-            onClick={handleExportCSV}
-            className="px-4 py-2.5 border border-outline text-on-surface font-label-md text-label-md rounded-lg flex items-center gap-2 hover:bg-surface-container transition-all active:scale-95 duration-100"
-          >
-            <span className="material-symbols-outlined text-[20px]">file_download</span>
-            <span>Export CSV</span>
-          </button>
-          <button 
-            onClick={() => {
-              setIsSettingsOpen(true);
-              document.body.style.overflow = 'hidden';
-            }}
-            className="px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center gap-2 hover:shadow-lg transition-all active:scale-95 duration-100 shadow-sm"
-          >
-            <span className="material-symbols-outlined text-[20px]">settings_suggest</span>
-            <span>Auto-Approve Settings</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Dashboard Stats Bento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-stack-lg text-left">
-        <div className="glass-card p-stack-md rounded-xl flex flex-col justify-between h-28 border border-outline-variant/60 shadow-sm">
-          <span className="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-bold">Total Reviews</span>
-          <div className="flex items-end justify-between mt-2">
-            <span className="font-headline-lg text-headline-lg font-bold text-primary">{totalReviewsCount.toLocaleString()}</span>
-            <span className="text-primary font-bold text-xs bg-primary-fixed border border-primary-fixed-dim px-2 py-0.5 rounded">+12%</span>
-          </div>
-        </div>
-
-        <div className="glass-card p-stack-md rounded-xl flex flex-col justify-between border-l-4 border-tertiary h-28 border border-outline-variant/60 shadow-sm">
-          <span className="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-bold">Pending Moderation</span>
-          <div className="flex items-end justify-between mt-2">
-            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">{pendingReviewsCount}</span>
-            <span className="text-tertiary font-bold text-xs flex items-center gap-1 bg-tertiary-fixed px-2.5 py-0.5 rounded">
-              <span className="material-symbols-outlined text-[14px]">warning</span> Action Required
-            </span>
-          </div>
-        </div>
-
-        <div className="glass-card p-stack-md rounded-xl flex flex-col justify-between h-28 border border-outline-variant/60 shadow-sm">
-          <span className="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-bold">Avg. Rating</span>
-          <div className="flex items-end justify-between mt-2">
-            <div className="flex flex-col">
-              <span className="font-headline-lg text-headline-lg font-bold text-on-surface">4.8</span>
-              <div className="flex text-surface-tint mt-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="material-symbols-outlined text-xs text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                ))}
-              </div>
-            </div>
-            <span className="text-on-surface-variant font-bold text-[10px] uppercase">Last 30 days</span>
-          </div>
-        </div>
-
-        <div className="glass-card p-stack-md rounded-xl flex flex-col justify-between h-28 border border-outline-variant/60 shadow-sm">
-          <span className="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-bold">Conversion Rate</span>
-          <div className="flex items-end justify-between mt-2">
-            <span className="font-headline-lg text-headline-lg font-bold text-on-surface">94%</span>
-            <span className="text-on-surface-variant font-bold text-[10px] uppercase">Published</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters Bar */}
-      <div className="glass-card rounded-xl p-4 mb-stack-lg flex flex-wrap items-center gap-6 text-left border border-outline-variant/60 shadow-sm">
-        <div className="flex items-center gap-2">
-          <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Status:</label>
-          <select 
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-surface border-outline-variant text-body-sm rounded-lg focus:ring-primary focus:border-primary py-1 px-3 cursor-pointer"
-          >
-            <option value="All Reviews">All Reviews</option>
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Archived">Archived</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Rating:</label>
-          <div className="flex gap-1">
-            {[5, 4, 3, 2, 1].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setSelectedRating(selectedRating === star ? null : star)}
-                className={`w-8 h-8 rounded border text-xs font-bold transition-all ${
-                  selectedRating === star
-                    ? 'bg-primary text-on-primary shadow-sm border-primary'
-                    : 'border-outline-variant hover:bg-primary-container/20 text-on-surface-variant'
-                }`}
-              >
-                {star}★
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Date Search:</label>
-          <input 
-            type="date"
-            className="bg-surface border border-outline-variant/60 text-body-sm rounded-lg focus:ring-primary focus:border-primary px-3 py-1 font-medium"
-          />
-        </div>
-
-        <button 
-          onClick={handleClearFilters}
-          className="ml-auto text-primary font-label-md text-label-md hover:underline font-bold text-xs"
+        <button
+          onClick={handleAddReviewClick}
+          className="px-6 py-3 bg-primary text-on-primary rounded-xl font-bold text-sm shadow-md active:scale-95 duration-100 flex items-center gap-2 hover:opacity-90 self-start md:self-auto"
         >
-          Clear all filters
+          <span className="material-symbols-outlined text-lg">add</span> Add Review
         </button>
       </div>
 
-      {/* Review Cards Grid (Asymmetric Layout) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter text-left items-start">
+      {/* Bento Grid layout */}
+      <div className="grid grid-cols-12 gap-gutter text-left">
         
-        {/* Primary Feed (Left Column) */}
-        <div className="col-span-12 lg:col-span-8 space-y-6">
-          {paginatedReviews.map((review) => (
-            <div 
-              key={review.id}
-              className={`bg-surface-container-lowest border rounded-xl p-stack-md card-lift transition-all ${
-                review.status === 'Flagged' ? 'border-2 border-error-container' : 'border-outline-variant'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-4 gap-2 flex-wrap">
-                <div className="flex items-center gap-3">
-                  {review.avatar ? (
-                    <img 
-                      alt="Student Avatar" 
-                      className="w-12 h-12 rounded-full object-cover border border-outline-variant/40" 
-                      src={review.avatar}
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant font-bold text-sm border border-outline-variant/40">
-                      {review.studentName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-label-md text-label-md text-on-surface font-bold leading-none">{review.studentName}</h4>
-                    <p className="text-body-sm text-on-surface-variant mt-1.5 font-light">
-                      {review.course} • <span className="font-semibold">{review.time}</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-0.5 text-primary shrink-0">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <span 
-                      key={i} 
-                      className="material-symbols-outlined text-[18px]"
-                      style={{ fontVariationSettings: `"FILL" ${i < review.rating ? 1 : 0}` }}
-                    >
-                      star
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {review.status === 'Flagged' && (
-                <div className="bg-error-container/20 p-3 rounded-lg mb-4 flex gap-3 items-start border border-error-container/30 leading-snug">
-                  <span className="material-symbols-outlined text-error shrink-0 text-[18px]">flag</span>
-                  <p className="text-[11px] text-on-error-container italic font-bold">
-                    {review.flaggedReason}
-                  </p>
-                </div>
-              )}
-
-              <p className="text-body-md text-on-surface leading-relaxed mb-6 italic font-light">
-                "{review.feedback}"
-              </p>
-
-              <div className="flex items-center justify-between pt-4 border-t border-outline-variant/50 flex-wrap gap-3">
-                <div className="flex gap-2">
-                  <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                    review.status === 'Approved'
-                      ? 'bg-green-500/10 text-green-700'
-                      : review.status === 'Pending'
-                      ? 'bg-secondary-container text-on-secondary-container'
-                      : 'bg-error-container text-on-error-container'
-                  }`}>
-                    {review.status}
-                  </span>
-                  {review.verified && (
-                    <span className="px-2.5 py-1 bg-surface-container text-on-surface-variant rounded text-[10px] font-bold uppercase tracking-wider border border-outline-variant/30">
-                      Verified Purchase
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {review.status === 'Pending' && (
-                    <>
-                      <button 
-                        onClick={() => handleRejectReview(review)}
-                        className="px-3.5 py-1.5 border border-error text-error rounded-lg font-bold text-xs hover:bg-error/10 transition-colors active:scale-95 duration-100"
-                      >
-                        Reject
-                      </button>
-                      <button 
-                        onClick={() => handleApproveReview(review)}
-                        className="px-4 py-1.5 bg-primary text-on-primary rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors active:scale-95 duration-100 shadow-sm"
-                      >
-                        Approve
-                      </button>
-                    </>
-                  )}
-
-                  {review.status === 'Approved' && (
-                    <>
-                      <button 
-                        onClick={() => handleArchiveReview(review)}
-                        className="px-3.5 py-1.5 border border-outline text-on-surface-variant rounded-lg font-bold text-xs hover:bg-surface-container transition-colors active:scale-95 duration-100"
-                      >
-                        Archive
-                      </button>
-                      <button 
-                        onClick={() => handleUndoApproval(review)}
-                        className="px-4 py-1.5 bg-surface-container text-on-surface-variant rounded-lg font-bold text-xs hover:bg-surface-container-high transition-colors active:scale-95 duration-100"
-                      >
-                        Undo Approval
-                      </button>
-                    </>
-                  )}
-
-                  {review.status === 'Flagged' && (
-                    <button 
-                      onClick={() => handleRejectReview(review)}
-                      className="px-4 py-1.5 bg-error text-on-error rounded-lg font-bold text-xs hover:bg-error/90 transition-colors active:scale-95 duration-100 shadow-sm"
-                    >
-                      Reject &amp; Notify Admin
-                    </button>
-                  )}
-
-                  <button 
-                    onClick={() => triggerToast('Opening advanced moderations dropdown menu options...')}
-                    className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {filteredReviews.length === 0 && (
-            <div className="p-12 text-center border border-dashed border-outline-variant/60 rounded-xl bg-surface-container-lowest text-on-surface-variant italic font-light text-sm">
-              No testimonials match the selected status or rating criteria.
-            </div>
-          )}
-
-          {visibleCount < filteredReviews.length && (
-            <div className="flex justify-center mt-12 mb-8">
-              <button 
-                onClick={() => setVisibleCount(prev => prev + 2)}
-                className="px-12 py-3 bg-surface-container-low hover:bg-surface-container-high text-primary border border-outline-variant font-bold rounded-lg transition-all active:scale-95 duration-100 text-sm shadow-sm"
-              >
-                Load More Reviews
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Secondary Info (Right Column) */}
-        <div className="col-span-12 lg:col-span-4 space-y-6">
+        {/* Left Column: Metrics & Moderation Controls */}
+        <div className="col-span-12 lg:col-span-4 space-y-gutter">
           
-          {/* Moderation Guidelines */}
-          <div className="glass-card rounded-xl p-stack-md border border-outline-variant/60 shadow-sm space-y-4">
-            <h3 className="font-headline-sm text-headline-sm font-bold border-b border-outline-variant/30 pb-2">
-              Moderation Rules
-            </h3>
-            <ul className="space-y-4 text-xs font-medium">
-              <li className="flex gap-3 items-start">
-                <span className="material-symbols-outlined text-green-500 text-[20px] shrink-0">check_circle</span>
-                <span className="text-on-surface-variant leading-snug">Reviews must focus on course content, instructor quality, or learning outcomes.</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <span className="material-symbols-outlined text-green-500 text-[20px] shrink-0">check_circle</span>
-                <span className="text-on-surface-variant leading-snug">Constructive criticism is allowed and encouraged for transparency.</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <span className="material-symbols-outlined text-error text-[20px] shrink-0">cancel</span>
-                <span className="text-on-surface-variant leading-snug">Personal attacks, profanity, or blatant marketing of other services will be rejected.</span>
-              </li>
-              <li className="flex gap-3 items-start">
-                <span className="material-symbols-outlined text-error text-[20px] shrink-0">cancel</span>
-                <span className="text-on-surface-variant leading-snug">Payment disputes should be handled via the 'Payments' tab, not public reviews.</span>
-              </li>
-            </ul>
-            <div className="pt-2 border-t border-outline-variant/30">
-              <button 
-                onClick={() => triggerToast('Redirecting to the central institutional moderation policy guide...')}
-                className="w-full py-2 text-primary font-bold text-xs border border-primary/20 rounded-lg hover:bg-primary-container/10 transition-colors"
-              >
-                View Full Policy
-              </button>
+          {/* Metrics Bento Card */}
+          <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-48">
+            <div className="flex justify-between items-start">
+              <span className="p-3 bg-primary-container text-primary rounded-lg material-symbols-outlined">rate_review</span>
+              <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
+                MongoDB Live
+              </span>
+            </div>
+            <div className="mt-4">
+              <p className="text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider font-semibold">Total Testimonials</p>
+              <h3 className="font-headline-xl text-headline-xl text-primary font-bold leading-none mt-1">{reviewsList.length}</h3>
+              <p className="text-xs text-on-surface-variant mt-2 font-medium">
+                {reviewsList.filter(r => r.status === 'Approved').length} Approved • {reviewsList.filter(r => r.status === 'Pending').length} Pending
+              </p>
             </div>
           </div>
 
-          {/* Sentiment Analysis */}
-          <div className="glass-card rounded-xl p-stack-md border border-outline-variant/60 shadow-sm bg-gradient-to-br from-surface to-primary-container/5 space-y-4">
-            <h3 className="font-headline-sm text-headline-sm font-bold border-b border-outline-variant/30 pb-2">
-              Review Insights
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-1 text-xs font-bold uppercase">
-                  <span>Positive Sentiment</span>
-                  <span className="text-primary">88%</span>
-                </div>
-                <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: '88%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between mb-1 text-xs font-bold uppercase">
-                  <span>Neutral Sentiment</span>
-                  <span className="text-tertiary">9%</span>
-                </div>
-                <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                  <div className="h-full bg-tertiary-container rounded-full transition-all duration-1000" style={{ width: '9%' }}></div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between mb-1 text-xs font-bold uppercase">
-                  <span>Negative Sentiment</span>
-                  <span className="text-error">3%</span>
-                </div>
-                <div className="h-2 w-full bg-secondary-container rounded-full overflow-hidden">
-                  <div className="h-full bg-error rounded-full transition-all duration-1000" style={{ width: '3%' }}></div>
-                </div>
-              </div>
+          {/* Filtering Widgets Card */}
+          <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm space-y-6">
+            <h4 className="font-label-md text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Moderation Filter</h4>
+            
+            <div className="space-y-2">
+              {['All Reviews', 'Approved', 'Pending', 'Flagged', 'Archived'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className={`w-full flex justify-between items-center px-4 py-2.5 rounded-lg text-body-sm font-medium transition-all ${
+                    (selectedStatus === status)
+                      ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                      : 'hover:bg-surface-container text-on-surface-variant font-light'
+                  }`}
+                >
+                  <span>{status}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    selectedStatus === status ? 'bg-primary text-on-primary' : 'bg-surface-container-high'
+                  }`}>
+                    {status === 'All Reviews' ? reviewsList.length : reviewsList.filter(r => r.status === status).length}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            <div className="mt-6 p-3 bg-white/50 rounded-lg border border-outline-variant/50">
-              <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider mb-2">
-                Popular Keywords
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {['Curriculum', 'Instructor', 'Job Ready', 'Helpful', 'Practical'].map((keyword) => (
-                  <span 
-                    key={keyword}
-                    onClick={() => {
-                      setSearchQuery(keyword);
-                      triggerToast(`Filtering testimonials for keyword: "${keyword}"`);
-                    }}
-                    className="px-2.5 py-1 bg-surface-container hover:bg-primary/10 hover:text-primary transition-all rounded-full text-[11px] text-on-surface-variant font-bold cursor-pointer border border-outline-variant/20"
+            <div className="pt-6 border-t border-outline-variant">
+              <h5 className="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase mb-3 tracking-wider">Rating Score</h5>
+              <div className="flex gap-2 flex-wrap">
+                <button 
+                  onClick={() => setSelectedRating(null)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${selectedRating === null ? 'bg-primary text-on-primary' : 'bg-surface-container hover:bg-surface-container-high'}`}
+                >
+                  All Stars
+                </button>
+                {[5, 4, 3, 2, 1].map(stars => (
+                  <button
+                    key={stars}
+                    onClick={() => setSelectedRating(stars)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 ${selectedRating === stars ? 'bg-primary text-on-primary' : 'bg-surface-container hover:bg-surface-container-high'}`}
                   >
-                    {keyword}
-                  </span>
+                    {stars} <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Recent Activity Mini-Feed */}
-          <div className="glass-card rounded-xl p-stack-md border border-outline-variant/60 shadow-sm space-y-4">
-            <h3 className="font-headline-sm text-headline-sm font-bold border-b border-outline-variant/30 pb-2">
-              Moderator Activity
-            </h3>
-            <div className="space-y-4">
-              {moderatorLogs.map((log) => (
-                <div key={log.id} className="flex gap-3 items-start">
-                  <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${
-                    log.iconColor === 'bg-error' ? 'bg-red-500' : log.iconColor === 'bg-tertiary' ? 'bg-blue-600' : 'bg-green-500'
-                  }`}></div>
-                  <div>
-                    <p className="text-body-sm text-on-surface font-bold leading-tight">{log.action}</p>
-                    <p className="text-[10px] text-on-surface-variant mt-1 font-semibold uppercase">{log.time} • By {log.author}</p>
+        </div>
+
+        {/* Right Column: Reviews Moderation Inbox */}
+        <div className="col-span-12 lg:col-span-8 flex flex-col justify-between">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col justify-between">
+            <div className="p-6 border-b border-outline-variant flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Moderation Queue</h3>
+              
+              <div className="relative w-full md:w-72">
+                <span className="absolute left-3 top-2.5 text-on-surface-variant material-symbols-outlined text-base">search</span>
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search reviewer or course..." 
+                  className="w-full pl-9 pr-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto max-h-[500px]">
+              {filteredReviews.slice(0, visibleCount).map((rev) => (
+                <div key={rev.id} className="p-5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest hover:border-primary/40 transition-all flex flex-col md:flex-row gap-4 justify-between items-start text-left">
+                  
+                  {/* Avatar & Content details */}
+                  <div className="flex gap-4 items-start">
+                    <img className="w-12 h-12 object-cover rounded-full border border-outline-variant shadow-sm flex-shrink-0" src={rev.avatar} alt={rev.studentName} />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-label-md text-on-surface font-bold leading-none">{rev.studentName}</h4>
+                        {rev.verified && <span className="bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-0.5">Verified Student</span>}
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant">{rev.course} • {rev.time}</p>
+                      
+                      {/* Star Rating display */}
+                      <div className="flex text-yellow-500 py-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <span key={s} className="material-symbols-outlined text-sm" style={{ fontVariationSettings: s <= rev.rating ? "'FILL' 1" : "'FILL' 0" }}>
+                            star
+                          </span>
+                        ))}
+                      </div>
+
+                      <p className="text-body-md text-on-surface font-light leading-relaxed pt-2">"{rev.feedback}"</p>
+                      
+                      {rev.videoUrl && (
+                        <div className="inline-flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded font-semibold mt-1">
+                          <span className="material-symbols-outlined text-sm">play_circle</span> YouTube Video: {rev.videoUrl}
+                        </div>
+                      )}
+                      
+                      {rev.status === 'Flagged' && (
+                        <div className="mt-4 p-3 bg-error-container/20 rounded-lg text-error text-xs border border-error/10 font-bold flex items-start gap-2">
+                          <span className="material-symbols-outlined text-sm shrink-0 mt-0.5">warning</span>
+                          <span>Spam check review flagged for safety parameters.</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Actions Column */}
+                  <div className="flex flex-row md:flex-col gap-2 w-full md:w-auto shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-outline-variant/30">
+                    {rev.status !== 'Approved' && (
+                      <button 
+                        onClick={() => handleApproveReview(rev)}
+                        className="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg font-label-sm text-xs font-bold shadow-sm active:scale-95 duration-100 flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">check</span> Approve
+                      </button>
+                    )}
+                    {rev.status !== 'Archived' && (
+                      <button 
+                        onClick={() => handleRejectReview(rev)}
+                        className="flex-1 px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-lg font-label-sm text-xs font-bold active:scale-95 duration-100 flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">archive</span> Archive
+                      </button>
+                    )}
+                    {rev.status !== 'Flagged' && rev.status !== 'Approved' && (
+                      <button 
+                        onClick={() => handleFlagReview(rev)}
+                        className="flex-1 px-4 py-2 hover:bg-surface-container text-warning rounded-lg text-xs font-bold flex items-center justify-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">flag</span> Flag
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => handleEditReviewClick(rev)}
+                      className="flex-1 px-4 py-2 bg-secondary text-on-secondary rounded-lg font-label-sm text-xs font-bold shadow-sm active:scale-95 duration-100 flex items-center justify-center gap-1.5 hover:opacity-90"
+                    >
+                      <span className="material-symbols-outlined text-sm">edit</span> Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteReviewClick(rev)}
+                      className="px-2.5 py-2 text-outline hover:text-error hover:bg-error-container/10 rounded-lg flex items-center justify-center transition-colors"
+                      title="Permanently Delete Review"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+
                 </div>
               ))}
-            </div>
-          </div>
 
+              {filteredReviews.length === 0 && (
+                <div className="py-16 text-center text-on-surface-variant font-light italic">
+                  No review testimonials matched the selected filter criteria.
+                </div>
+              )}
+            </div>
+
+            {/* Load More Button */}
+            {filteredReviews.length > visibleCount && (
+              <div className="p-4 bg-surface-container-low flex justify-center border-t border-outline-variant/30 shrink-0">
+                <button 
+                  onClick={() => setVisibleCount(prev => prev + 4)}
+                  className="text-primary font-label-md flex items-center hover:underline font-bold text-sm"
+                >
+                  Load More Testimonials
+                  <span className="material-symbols-outlined ml-1">expand_more</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
 
-      {/* Slide-Up Notification Toast */}
-      <div 
-        className={`fixed bottom-10 right-10 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] border border-outline-variant/20 ${
-          toast.visible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-        }`}
-      >
-        <span className="material-symbols-outlined text-green-400">check_circle</span>
-        <span className="font-label-md text-label-md font-semibold">{toast.message}</span>
+      {/* Popover Background Blocker / Settings toggle */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setIsSettingsOpen(false)} />
+      )}
+
+      {/* Floating Action / Audit logs card */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden text-left mt-8">
+        <div className="px-stack-md py-4 border-b border-outline-variant flex justify-between items-center">
+          <h3 className="font-headline-sm text-headline-sm font-bold">Moderation History Log</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-body-sm text-body-sm">
+            <thead className="bg-surface border-b border-outline-variant/30 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Action Details</th>
+                <th className="px-6 py-4">Managed By</th>
+                <th className="px-6 py-4 text-right">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/20 text-on-surface-variant font-light">
+              {moderatorLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-surface-container transition-all">
+                  <td className="px-6 py-4 flex items-center">
+                    <span className={`w-2.5 h-2.5 rounded-full mr-3 shrink-0 ${log.iconColor}`}></span>
+                    <span className="font-medium text-on-surface">{log.action}</span>
+                  </td>
+                  <td className="px-6 py-4 font-semibold">{log.author}</td>
+                  <td className="px-6 py-4 text-right text-on-surface-variant font-bold text-xs uppercase">{log.time}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal: Auto-Approve Automation Settings */}
-      {isSettingsOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => { setIsSettingsOpen(false); document.body.style.overflow = 'auto'; }}></div>
-          <div className="relative w-full max-w-lg bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
-            <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Auto-Approve Testimonials Settings</h3>
-              <button 
-                className="p-1.5 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
-                onClick={() => { setIsSettingsOpen(false); document.body.style.overflow = 'auto'; }}
+      {/* Toast popup */}
+      {toast.visible && (
+        <div className="fixed bottom-6 right-6 z-50 bg-inverse-surface text-inverse-on-surface px-6 py-3 rounded-lg shadow-lg font-label-md flex items-center space-x-3 border border-outline-variant/30 animate-slide-up">
+          <span className="material-symbols-outlined text-success">check_circle</span>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl w-full max-w-xl overflow-hidden shadow-xl relative max-h-[90vh] flex flex-col text-left">
+            <header className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                {editingReview ? 'Edit Review' : 'Add New Review'}
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-on-surface-variant hover:text-on-surface material-symbols-outlined"
               >
-                <span className="material-symbols-outlined">close</span>
+                close
               </button>
-            </div>
+            </header>
             
-            <form onSubmit={handleSettingsSaveSubmit} className="p-stack-md space-y-4">
-              <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/40">
-                <div>
-                  <h5 className="font-bold text-xs uppercase text-on-surface">Verified Purchases Auto-Publish</h5>
-                  <p className="text-[10px] text-on-surface-variant font-light mt-0.5 leading-snug">Automatically approve reviews with verified purchase credentials.</p>
+            <form onSubmit={handleFormSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Student Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.studentName}
+                    onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                    className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="e.g. Meera"
+                  />
                 </div>
-                <input 
-                  type="checkbox"
-                  checked={autoApproveConfig.autoApproveVerified}
-                  onChange={(e) => setAutoApproveConfig(prev => ({ ...prev, autoApproveVerified: e.target.checked }))}
-                  className="w-10 h-5 rounded-full bg-surface-container-highest checked:bg-primary border-none cursor-pointer focus:ring-0 focus:outline-none"
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Course Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.courseName}
+                    onChange={(e) => setFormData({ ...formData, courseName: e.target.value })}
+                    className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="e.g. Web Development"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Rating</label>
+                  <select
+                    value={formData.rating}
+                    onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
+                    className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {[5, 4, 3, 2, 1].map((r) => (
+                      <option key={r} value={r}>{r} Star{r > 1 ? 's' : ''}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {['Approved', 'Pending', 'Flagged', 'Archived'].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Student Photo URL (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.studentPhoto}
+                  onChange={(e) => setFormData({ ...formData, studentPhoto: e.target.value })}
+                  className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="e.g. https://domain.com/photo.jpg"
                 />
               </div>
 
-              <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Auto-Approve Ratings Threshold</label>
-                <select 
-                  value={autoApproveConfig.ratingThreshold}
-                  onChange={(e) => setAutoApproveConfig(prev => ({ ...prev, ratingThreshold: parseInt(e.target.value) }))}
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest cursor-pointer font-bold text-body-sm"
-                >
-                  <option value="5">Only 5-Star Reviews</option>
-                  <option value="4">4-Stars and Above</option>
-                  <option value="3">3-Stars and Above</option>
-                </select>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">YouTube Video URL (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.videoUrl}
+                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                  className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                />
+                <p className="text-[10px] text-on-surface-variant">Provide a YouTube link to make this a video review (Student Success Story).</p>
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/40">
-                <div>
-                  <h5 className="font-bold text-xs uppercase text-on-surface">System AI Spam Filters</h5>
-                  <p className="text-[10px] text-on-surface-variant font-light mt-0.5 leading-snug">Enable real-time AI checking of language, excessive punctuation, and spam words.</p>
-                </div>
-                <input 
-                  type="checkbox"
-                  checked={autoApproveConfig.spamWordFilter}
-                  onChange={(e) => setAutoApproveConfig(prev => ({ ...prev, spamWordFilter: e.target.checked }))}
-                  className="w-10 h-5 rounded-full bg-surface-container-highest checked:bg-primary border-none cursor-pointer focus:ring-0 focus:outline-none"
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Review / Success Story Description</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.reviewText}
+                  onChange={(e) => setFormData({ ...formData, reviewText: e.target.value })}
+                  className="w-full px-4 py-2 border border-outline-variant bg-surface rounded-lg text-body-sm font-light text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Describe the student's journey or review..."
                 />
               </div>
 
-              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
-                <button 
-                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={() => { setIsSettingsOpen(false); document.body.style.overflow = 'auto'; }}
+              <div className="pt-4 border-t border-outline-variant/30 flex justify-end gap-2">
+                <button
                   type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-lg font-label-sm text-xs font-bold active:scale-95 duration-100"
                 >
                   Cancel
                 </button>
-                <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100" 
+                <button
                   type="submit"
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-sm text-xs font-bold shadow-sm active:scale-95 duration-100 hover:opacity-90"
                 >
-                  Apply Rules
+                  {editingReview ? 'Save Changes' : 'Create Review'}
                 </button>
               </div>
             </form>
@@ -654,4 +653,3 @@ const Reviews = () => {
 };
 
 export default Reviews;
-

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import contactService from '../../services/contactService';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -7,16 +8,32 @@ const Contact = () => {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Message sent successfully!');
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
+    setIsSubmitting(true);
+    setSubmitError('');
+    setSubmitSuccess(false);
+
+    try {
+      await contactService.createContact(formData);
+      setSubmitSuccess(true);
+      alert('Message sent successfully! We will get back to you soon.');
+      setFormData({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+      });
+    } catch (err) {
+      console.error(err);
+      setSubmitError(err.response?.data?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -146,12 +163,34 @@ const Contact = () => {
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 ></textarea>
               </div>
+              {submitError && (
+                <div className="p-4 bg-error-container text-on-error-container border border-error/20 rounded-lg flex items-center gap-2">
+                  <span className="material-symbols-outlined text-error">warning</span>
+                  <p className="font-body-sm">{submitError}</p>
+                </div>
+              )}
+              {submitSuccess && (
+                <div className="p-4 bg-primary-container text-on-primary-container border border-primary/20 rounded-lg flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">check_circle</span>
+                  <p className="font-body-sm">Thank you! Your message has been sent successfully.</p>
+                </div>
+              )}
               <button 
-                className="w-full md:w-auto px-10 h-14 bg-primary text-on-primary rounded-lg font-headline-sm text-headline-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2" 
+                className="w-full md:w-auto px-10 h-14 bg-primary text-on-primary rounded-lg font-headline-sm text-headline-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed" 
                 type="submit"
+                disabled={isSubmitting}
               >
-                Send Message
-                <span className="material-symbols-outlined">send</span>
+                {isSubmitting ? (
+                  <>
+                    Sending...
+                    <span className="material-symbols-outlined animate-spin">sync</span>
+                  </>
+                ) : (
+                  <>
+                    Send Message
+                    <span className="material-symbols-outlined">send</span>
+                  </>
+                )}
               </button>
             </form>
           </div>

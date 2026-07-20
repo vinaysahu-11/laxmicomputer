@@ -1,8 +1,12 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../redux/slices/authSlice';
 
 const StudentLayout = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
 
   const menuItems = [
     { label: 'Dashboard', icon: 'dashboard', to: '/student' },
@@ -20,8 +24,14 @@ const StudentLayout = () => {
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout from the Student Portal?')) {
+      dispatch(logout());
       navigate('/login');
     }
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'ST';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
   };
 
   return (
@@ -66,14 +76,20 @@ const StudentLayout = () => {
         {/* Footer Profile card */}
         <div className="px-4 mt-auto">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low border border-outline-variant/35 text-left">
-            <img
-              alt="Student Profile Avatar"
-              className="w-9 h-9 rounded-full object-cover border border-primary/20"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUfA65JV4uzymI372Wkby0p4JnhM47dR4uPAOE7DTW0UAtfv-KAiblVuTdjLsXlBKnvJ4FLitgu2Dc3dQicrJ9Ra5F67w0p_sT9Du0_-bUS_zz0QihITjQp3Qfq1q1xf1gAoDBnYaORJQEOx-DDA72uh1M0pfMnc0FHTTCf-zbDXhV854T2wGTEbSpgna5cg-o8v5D7SkVkVBa4HK4KHbbserkoTIngCnHclthdHy4-f1OkHNOI8gc4VaLeM3H8_YBUCH5pgE3M-qH"
-            />
+            {user?.profilePhoto || user?.photo ? (
+              <img
+                alt="Student Profile Avatar"
+                className="w-9 h-9 rounded-full object-cover border border-primary/20"
+                src={user.profilePhoto || user.photo}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs">
+                {getInitials(user?.name)}
+              </div>
+            )}
             <div className="overflow-hidden min-w-0">
-              <p className="font-label-md text-label-md text-xs font-bold truncate">Sarah Jenkins</p>
-              <p className="text-[10px] text-on-surface-variant truncate font-semibold uppercase">Active Student</p>
+              <p className="font-label-md text-label-md text-xs font-bold truncate">{user?.name || 'Student User'}</p>
+              <p className="text-[10px] text-on-surface-variant truncate font-semibold uppercase">{user?.studentId || 'Active Student'}</p>
             </div>
           </div>
         </div>
@@ -105,7 +121,17 @@ const StudentLayout = () => {
             <div className="h-6 w-[1px] bg-outline-variant"></div>
             <div className="flex items-center gap-2">
               <span className="font-label-sm text-label-sm text-xs font-bold text-on-surface">EduAcademy Student Portal</span>
-              <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-extrabold text-[11px] border border-primary-container/30 shadow-sm">S</div>
+              {user?.profilePhoto || user?.photo ? (
+                <img
+                  alt="Student Avatar Header"
+                  className="w-8 h-8 rounded-full object-cover border border-outline-variant/40"
+                  src={user.profilePhoto || user.photo}
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-extrabold text-[11px] border border-primary-container/30 shadow-sm">
+                  {getInitials(user?.name)[0]}
+                </div>
+              )}
             </div>
           </div>
         </header>

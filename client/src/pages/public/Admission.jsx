@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import courseService from '../../services/courseService';
+import admissionService from '../../services/admissionService';
 
 const Admission = () => {
   const [formData, setFormData] = useState({
@@ -8,7 +10,25 @@ const Admission = () => {
     address: '',
     message: ''
   });
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoadingCourses(true);
+        const data = await courseService.getCourses();
+        setCourses(data || []);
+      } catch (err) {
+        console.error('Failed to load courses for selection:', err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,13 +38,14 @@ const Admission = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
 
-    setTimeout(() => {
+    try {
+      await admissionService.createAdmission(formData);
       alert('Thank you for your application! Our academic counselor will contact you within 24 hours.');
-      setIsSubmitting(false);
       setFormData({
         studentName: '',
         phone: '',
@@ -32,7 +53,12 @@ const Admission = () => {
         address: '',
         message: ''
       });
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setSubmitError(err.response?.data?.message || 'Failed to submit admission inquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -142,13 +168,12 @@ const Admission = () => {
                     value={formData.course}
                     onChange={handleChange}
                   >
-                    <option disabled value="">Choose your course</option>
-                    <option value="web-dev">Full Stack Web Development</option>
-                    <option value="data-science">Data Science &amp; AI</option>
-                    <option value="python">Python Programming</option>
-                    <option value="graphic-design">Graphic Design Masterclass</option>
-                    <option value="digital-marketing">Digital Marketing Pro</option>
-                    <option value="basic">Office Productivity (MS Office)</option>
+                    <option disabled value="">{loadingCourses ? 'Loading courses...' : 'Choose your course'}</option>
+                    {courses.map(course => (
+                      <option key={course._id} value={course.title}>
+                        {course.title} ({course.category})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -178,6 +203,13 @@ const Admission = () => {
                     onChange={handleChange}
                   />
                 </div>
+
+                {submitError && (
+                  <div className="p-4 bg-error-container text-on-error-container border border-error/20 rounded-lg flex items-center gap-2">
+                    <span className="material-symbols-outlined text-error">warning</span>
+                    <p className="font-body-sm">{submitError}</p>
+                  </div>
+                )}
 
                 <div className="pt-4 flex flex-col md:flex-row gap-4">
                   <button

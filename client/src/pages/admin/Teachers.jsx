@@ -1,164 +1,260 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  getTeachers,
+  createTeacher,
+  updateTeacher,
+  deleteTeacher
+} from '../../services/teacherService';
 
 const Teachers = () => {
-  const [teachers, setTeachers] = useState([
-    {
-      id: 'FAC-2023-089',
-      name: 'James Wilson',
-      specialty: 'Cybersecurity',
-      joined: 'Mar 2023',
-      email: 'j.wilson@eduacademy.com',
-      initials: 'JW',
-      color: 'bg-tertiary-container'
-    },
-    {
-      id: 'FAC-2022-114',
-      name: 'Amara Kalu',
-      specialty: 'Mobile Development',
-      joined: 'Oct 2022',
-      email: 'a.kalu@eduacademy.com',
-      initials: 'AK',
-      color: 'bg-primary-container'
-    },
-    {
-      id: 'FAC-2023-005',
-      name: 'Simon Miller',
-      specialty: 'Cloud Computing',
-      joined: 'Jan 2023',
-      email: 's.miller@eduacademy.com',
-      initials: 'SM',
-      color: 'bg-secondary-container text-on-secondary-container'
-    }
-  ]);
+  // States
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // UI Toast State
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({
+  // Modal control states
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Form Mode
+  const [formMode, setFormMode] = useState('create'); // 'create' or 'edit'
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [teacherToDelete, setTeacherToDelete] = useState(null);
+
+  // Form Fields
+  const [formData, setFormData] = useState({
     name: '',
+    qualification: '',
+    subject: '',
+    experience: '',
+    bio: '',
     email: '',
-    specialty: 'Full Stack Development',
-    joinedDate: '',
-    departments: {
-      cs: true,
-      it: false,
-      media: false
-    }
+    phone: '',
+    facebook: '',
+    twitter: '',
+    linkedin: '',
+    status: true
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
 
-  const [availabilityHeights, setAvailabilityHeights] = useState({
-    mon: '0%',
-    tue: '0%',
-    wed: '0%',
-    thu: '0%',
-    fri: '0%',
-    sat: '0%',
-    sun: '0%'
-  });
+  const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAvailabilityHeights({
-        mon: '75%',
-        tue: '100%',
-        wed: '50%',
-        thu: '83%',
-        fri: '66%',
-        sat: '33%',
-        sun: '25%'
-      });
-    }, 150);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-    document.body.style.overflow = 'hidden';
+  const triggerToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 4000);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    document.body.style.overflow = 'auto';
+  const fetchAllTeachers = async () => {
+    try {
+      setLoading(true);
+      const data = await getTeachers();
+      setTeachers(data || []);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch faculty directory from the database.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllTeachers();
+  }, []);
+
+  const getImageUrl = (path) => {
+    if (!path) return '';
+    return path.startsWith('http') ? path : `http://localhost:5000${path}`;
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewTeacher(prev => ({
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleCheckboxChange = (deptKey) => {
-    setNewTeacher(prev => ({
-      ...prev,
-      departments: {
-        ...prev.departments,
-        [deptKey]: !prev.departments[deptKey]
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        triggerToast('Image file size must be under 5MB', 'warning');
+        return;
       }
-    }));
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
   };
 
-  const handleAddTeacher = (e) => {
+  const openCreateModal = () => {
+    setFormMode('create');
+    setFormData({
+      name: '',
+      qualification: '',
+      subject: '',
+      experience: '',
+      bio: '',
+      email: '',
+      phone: '',
+      facebook: '',
+      twitter: '',
+      linkedin: '',
+      status: true
+    });
+    setPhotoFile(null);
+    setPhotoPreview('');
+    setIsFormModalOpen(true);
+  };
+
+  const openEditModal = (teacher) => {
+    setFormMode('edit');
+    setSelectedTeacher(teacher);
+    setFormData({
+      name: teacher.name || '',
+      qualification: teacher.qualification || '',
+      subject: teacher.subject || '',
+      experience: teacher.experience || '',
+      bio: teacher.bio || '',
+      email: teacher.email || '',
+      phone: teacher.phone || '',
+      facebook: teacher.socialLinks?.facebook || '',
+      twitter: teacher.socialLinks?.twitter || '',
+      linkedin: teacher.socialLinks?.linkedin || '',
+      status: teacher.status !== undefined ? teacher.status : true
+    });
+    setPhotoFile(null);
+    setPhotoPreview(teacher.photo ? getImageUrl(teacher.photo) : '');
+    setIsFormModalOpen(true);
+  };
+
+  const openDetailModal = (teacher) => {
+    setSelectedTeacher(teacher);
+    setIsDetailModalOpen(true);
+  };
+
+  const openDeleteConfirm = (teacher) => {
+    setTeacherToDelete(teacher);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!newTeacher.name || !newTeacher.email) {
-      alert('Please fill in all required fields.');
+
+    // Validations
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.qualification.trim() || !formData.subject.trim() || !formData.experience.trim()) {
+      triggerToast('Please fill out all required fields', 'warning');
       return;
     }
 
-    const nameParts = newTeacher.name.split(' ');
-    const initials = nameParts.map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      triggerToast('Please provide a valid email address', 'warning');
+      return;
+    }
 
-    const yearJoined = newTeacher.joinedDate ? newTeacher.joinedDate.substring(0, 4) : '2026';
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthJoined = newTeacher.joinedDate ? monthNames[parseInt(newTeacher.joinedDate.substring(5, 7)) - 1] : 'Jun';
+    try {
+      const payload = new FormData();
+      payload.append('name', formData.name);
+      payload.append('qualification', formData.qualification);
+      payload.append('subject', formData.subject);
+      payload.append('experience', formData.experience);
+      payload.append('bio', formData.bio);
+      payload.append('email', formData.email);
+      payload.append('phone', formData.phone);
+      payload.append('status', formData.status);
 
-    const createdTeacher = {
-      id: `FAC-${yearJoined}-${100 + teachers.length + 1}`,
-      name: newTeacher.name,
-      specialty: newTeacher.specialty,
-      joined: `${monthJoined} ${yearJoined}`,
-      email: newTeacher.email,
-      initials: initials || 'IN',
-      color: 'bg-primary-container'
-    };
+      const socialObj = {
+        facebook: formData.facebook,
+        twitter: formData.twitter,
+        linkedin: formData.linkedin
+      };
+      payload.append('socialLinks', JSON.stringify(socialObj));
 
-    setTeachers(prev => [...prev, createdTeacher]);
-    setNewTeacher({
-      name: '',
-      email: '',
-      specialty: 'Full Stack Development',
-      joinedDate: '',
-      departments: {
-        cs: true,
-        it: false,
-        media: false
+      if (photoFile) {
+        payload.append('photo', photoFile);
       }
-    });
-    handleCloseModal();
+
+      if (formMode === 'create') {
+        await createTeacher(payload);
+        triggerToast(`Successfully added ${formData.name}!`);
+      } else {
+        await updateTeacher(selectedTeacher._id, payload);
+        triggerToast(`Successfully updated ${formData.name}!`);
+      }
+
+      setIsFormModalOpen(false);
+      fetchAllTeachers();
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || 'Error processing teacher profile.';
+      triggerToast(msg, 'error');
+    }
   };
 
-  const handleEditTeacher = (name) => {
-    alert(`Editing schedule and catalog structures for Instructor ${name}...`);
+  const toggleTeacherStatus = async (teacher) => {
+    try {
+      const newStatus = !teacher.status;
+      const updatedFormData = new FormData();
+      updatedFormData.append('status', newStatus);
+      
+      await updateTeacher(teacher._id, updatedFormData);
+      triggerToast(`${teacher.name} status set to ${newStatus ? 'Active' : 'Inactive'}`);
+      fetchAllTeachers();
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to toggle status.', 'error');
+    }
   };
 
-  const handleMessageTeacher = (name) => {
-    alert(`Opening direct portal chat channel to ${name}...`);
-  };
-
-  const handleManageSchedule = (name) => {
-    alert(`Opening dynamic calendar scheduler for ${name}...`);
+  const executeDeleteTeacher = async () => {
+    if (!teacherToDelete) return;
+    try {
+      await deleteTeacher(teacherToDelete._id);
+      triggerToast(`Instructor "${teacherToDelete.name}" permanently deleted.`);
+      setIsDeleteConfirmOpen(false);
+      setTeacherToDelete(null);
+      fetchAllTeachers();
+    } catch (err) {
+      console.error(err);
+      triggerToast('Error deleting teacher.', 'error');
+    }
   };
 
   return (
-    <div className="space-y-stack-lg">
+    <div className="space-y-stack-lg relative">
       
+      {/* Toast Alert Notification */}
+      {toast.visible && (
+        <div className={`fixed top-4 right-4 z-[999] flex items-center gap-3 px-6 py-4 rounded-xl shadow-xl border text-sm font-semibold transition-all animate-bounce duration-300 ${
+          toast.type === 'success' 
+            ? 'bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400 backdrop-blur-md'
+            : toast.type === 'warning'
+            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400 backdrop-blur-md'
+            : 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 backdrop-blur-md'
+        }`}>
+          <span className="material-symbols-outlined text-[20px]">
+            {toast.type === 'success' ? 'check_circle' : toast.type === 'warning' ? 'warning' : 'error'}
+          </span>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-stack-lg gap-4 text-left">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Faculty Management</h2>
-          <p className="font-body-md text-body-md text-on-surface-variant">Oversee and organize the academy's expert instructors and teaching staff.</p>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Faculty Directory</h2>
+          <p className="font-body-md text-body-md text-on-surface-variant">Oversee and organize Laxmi Academy's expert instructors and teaching staff.</p>
         </div>
         <button 
-          onClick={handleOpenModal}
+          onClick={openCreateModal}
           className="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md text-label-md flex items-center gap-2 hover:scale-102 transition-transform shadow-md shrink-0 active:scale-95 duration-150"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
@@ -166,381 +262,505 @@ const Teachers = () => {
         </button>
       </div>
 
-      {/* Dashboard Stats for Teachers */}
+      {/* Dashboard Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-stack-lg text-left">
-        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant card-lift">
+        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant shadow-sm">
           <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Total Faculty</p>
-          <h3 className="font-headline-md text-headline-md text-primary font-bold">48</h3>
-          <p className="text-[12px] text-green-600 flex items-center mt-1 font-semibold">
-            <span className="material-symbols-outlined text-[14px] mr-1">trending_up</span>
-            +3 this month
-          </p>
+          <h3 className="font-headline-md text-headline-md text-primary font-bold">{loading ? '...' : teachers.length}</h3>
+          <p className="text-[12px] text-on-surface-variant mt-1">Direct MongoDB seed files</p>
         </div>
-        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant card-lift">
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Active Courses</p>
-          <h3 className="font-headline-md text-headline-md text-tertiary font-bold">112</h3>
-          <p className="text-[12px] text-on-surface-variant mt-1">Average 2.3 per teacher</p>
+        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant shadow-sm">
+          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Active Instructors</p>
+          <h3 className="font-headline-md text-headline-md text-green-600 font-bold">
+            {loading ? '...' : teachers.filter(t => t.status).length}
+          </h3>
+          <p className="text-[12px] text-green-600 mt-1">Currently showing on public web</p>
         </div>
-        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant card-lift">
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Avg. Rating</p>
-          <h3 className="font-headline-md text-headline-md text-orange-500 font-bold">4.8/5</h3>
-          <div className="flex mt-1 text-orange-400">
-            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            <span className="material-symbols-outlined text-[14px]">star_half</span>
-          </div>
+        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant shadow-sm">
+          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Inactive</p>
+          <h3 className="font-headline-md text-headline-md text-on-surface-variant/60 font-bold">
+            {loading ? '...' : teachers.filter(t => !t.status).length}
+          </h3>
+          <p className="text-[12px] text-on-surface-variant mt-1">Hidden from public directory</p>
         </div>
-        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant card-lift">
-          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">On Leave</p>
-          <h3 className="font-headline-md text-headline-md text-error font-bold">2</h3>
-          <p className="text-[12px] text-on-surface-variant mt-1 font-light">Returning next week</p>
+        <div className="bg-surface-container-lowest p-stack-md rounded-xl border border-outline-variant shadow-sm">
+          <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Specialties</p>
+          <h3 className="font-headline-md text-headline-md text-tertiary font-bold">
+            {loading ? '...' : new Set(teachers.map(t => t.subject)).size}
+          </h3>
+          <p className="text-[12px] text-on-surface-variant mt-1">Core training divisions</p>
         </div>
       </div>
 
-      {/* Bento Grid Faculty List */}
-      <div className="grid grid-cols-12 gap-gutter text-left">
-        
-        {/* Teacher Card 1 (Large Featured) */}
-        <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden flex flex-col md:flex-row group">
-          <div className="w-full md:w-1/3 relative h-48 md:h-auto overflow-hidden">
-            <img 
-              className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" 
-              alt="A professional headshot of a female computer science professor"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8R1xHQ-91rAG8uSNBeP8yHYKUvREHaA3Y1l6XtLnborfK6wjOzXjAi2caaJ_X1b-mJph9n-PbvdvgxzvtAq5yuieoLhJ7SiVs7Jtc3jio2RV9s0MnkMwab22sJQ95FUfyCoTnB8V38MckRy-3SwqSYd1sqHAk3HdBZWNRYJceiCjGUO5NCHsAk2iQmSthYtrngxxh1ERVkhh958px_EA90kE-nk6RwPh78o32g8vMihc_OpVq3n0jjmGvKmQHOuufg_svTA6TNi8c"
-            />
-          </div>
-          <div className="p-stack-lg flex-1 flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-label-sm text-label-sm mb-2 inline-block font-semibold">Department Head</span>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Dr. Sarah Jenkins</h4>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">Senior Full Stack Architect</p>
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => handleMessageTeacher('Dr. Sarah Jenkins')}
-                  className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors flex items-center justify-center"
-                >
-                  <span className="material-symbols-outlined">mail</span>
-                </button>
-                <button 
-                  className="p-2 hover:bg-surface-container rounded-full text-on-surface-variant transition-colors flex items-center justify-center"
-                >
-                  <span className="material-symbols-outlined">more_vert</span>
-                </button>
-              </div>
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant mb-1 font-semibold">Courses</p>
-                <div className="flex flex-wrap gap-1">
-                  <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[11px] font-bold">Advanced React</span>
-                  <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[11px] font-bold">Node.js API Design</span>
-                </div>
-              </div>
-              <div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant mb-1 font-semibold">Experience</p>
-                <p className="font-body-sm text-body-sm text-on-surface font-light">12 Years Professional</p>
-              </div>
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button 
-                onClick={() => handleMessageTeacher('Dr. Sarah Jenkins')}
-                className="text-primary font-label-md text-label-md flex items-center gap-1 hover:underline underline-offset-4 font-semibold"
-              >
-                View Profile <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Teacher Card 2 */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant p-stack-md flex flex-col justify-between card-lift">
-          <div className="flex items-center gap-4 mb-4">
-            <img 
-              className="w-16 h-16 rounded-full object-cover border border-outline-variant/35" 
-              alt="Male data scientist instructor"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCPsXZ6JwFWuVueUldHpWIO_8epWmYNAOTTM5wa6S_LG__Xwsms-Meq_guYhiGtlGHQ6lNRcU_5oD6KFlCWzKNpq08RuS3HguzvFNOLmE73tBo9Vgmi1pIyg5PhYYQVsxJxb-dEizVfYvVHBTwA8w78-IBvlTFUHYcvB7_cSAWMT_7MjtrxK-vVeq4oFEL3EoHHtMVFDq0rC2G_DNAb26x4zzwFmIIVF0z2qQkTihrpeAxeBCUAEUVS-hoCtdfZ7u4FW2eE-MuUKwP"
-            />
-            <div>
-              <h4 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Mark Thompson</h4>
-              <p className="font-body-sm text-body-sm text-on-surface-variant font-light">Data Science &amp; AI</p>
-            </div>
-          </div>
-          <div className="flex-1 space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-outline-variant/50">
-              <span className="text-on-surface-variant text-[13px]">Assigned Courses</span>
-              <span className="font-label-md text-on-surface font-bold">4</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-outline-variant/50">
-              <span className="text-on-surface-variant text-[13px]">Next Session</span>
-              <span className="font-label-md text-on-surface font-semibold">2:00 PM Today</span>
-            </div>
-          </div>
-          <div className="mt-4 pt-4">
-            <button 
-              onClick={() => handleManageSchedule('Mark Thompson')}
-              className="w-full py-2 border border-primary text-primary rounded-lg font-label-md hover:bg-primary/5 transition-colors font-bold active:scale-98 duration-100"
-            >
-              Manage Schedule
-            </button>
-          </div>
-        </div>
-
-        {/* Teacher Card 3 */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container-lowest rounded-xl border border-outline-variant p-stack-md flex flex-col justify-between card-lift">
-          <div className="flex items-center gap-4 mb-4">
-            <img 
-              className="w-16 h-16 rounded-full object-cover border border-outline-variant/35" 
-              alt="Elena Rodriguez UI UX"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7pePi1rnWbPKD25SfoQGYU04C-sE4mXqijIJS-0htGqZ2NcMmgNmVmrl0V8OHOih7pYo7zuL3SFttVnNBMQuw1SDmuUVLy_NItm2Toe8gjk-bPVzjtyg2_7wvvPvh5JWL4iEqovIHksZ2M5KJBX5dxF_4OOlmKLVAAcgKeJ5a0ThV8gVdYScC-cMt3EPVBfR7LP7TRmcC_ZX-mvDZnhR-n9OjyQNJDmAl4wBxkB2eRSFSkO9Y-ASaPNwBgIMT37HvtJ4E4vOHQ6nd"
-            />
-            <div>
-              <h4 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Elena Rodriguez</h4>
-              <p className="font-body-sm text-body-sm text-on-surface-variant font-light">UI/UX Lead</p>
-            </div>
-          </div>
-          <div className="flex-1 space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-outline-variant/50">
-              <span className="text-on-surface-variant text-[13px]">Active Projects</span>
-              <span className="font-label-md text-on-surface font-bold">8 Teams</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-outline-variant/50">
-              <span className="text-on-surface-variant text-[13px]">Status</span>
-              <span className="text-green-600 font-label-md flex items-center gap-1 font-bold">
-                <span className="w-2 h-2 bg-green-600 rounded-full"></span> Online
-              </span>
-            </div>
-          </div>
-          <div className="mt-4 pt-4">
-            <button 
-              onClick={() => handleMessageTeacher('Elena Rodriguez')}
-              className="w-full py-2 border border-primary text-primary rounded-lg font-label-md hover:bg-primary/5 transition-colors font-bold active:scale-98 duration-100"
-            >
-              Message
-            </button>
-          </div>
-        </div>
-
-        {/* Teacher Card 4 (Horizontal Wide) */}
-        <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl border border-outline-variant p-stack-md flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Staff Availability Overview</h4>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-primary rounded-full"></span> <span class="text-[12px] text-on-surface-variant mr-4">Teaching</span>
-              <span className="w-3 h-3 bg-secondary-container rounded-full"></span> <span class="text-[12px] text-on-surface-variant">Office Hours</span>
-            </div>
-          </div>
-          
-          {/* Simplified Visual Graph Placeholder */}
-          <div className="h-32 w-full flex items-end gap-2 px-2 border-b border-outline-variant/30 pb-1">
-            <div className="flex-grow bg-primary/20 rounded-t-lg relative group transition-all duration-1000" style={{ height: availabilityHeights.mon }}>
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-surface shadow-md p-1 rounded hidden group-hover:block text-[10px] whitespace-nowrap z-10 border border-outline-variant">Mon: 75%</div>
-            </div>
-            <div className="flex-grow bg-primary rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.tue }}></div>
-            <div className="flex-grow bg-primary/40 rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.wed }}></div>
-            <div className="flex-grow bg-primary rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.thu }}></div>
-            <div className="flex-grow bg-primary/60 rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.fri }}></div>
-            <div className="flex-grow bg-secondary-container rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.sat }}></div>
-            <div className="flex-grow bg-secondary-container rounded-t-lg transition-all duration-1000" style={{ height: availabilityHeights.sun }}></div>
-          </div>
-          <div className="flex justify-between mt-2 px-2 font-label-sm text-label-sm text-on-surface-variant">
-            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* List Table for Remaining Teachers */}
-      <div className="mt-stack-lg bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden text-left shadow-sm">
+      {/* List Table for Teachers */}
+      <div className="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden text-left shadow-sm">
         <div className="px-stack-lg py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-          <h4 className="font-headline-sm text-headline-sm text-on-surface">Faculty Directory</h4>
-          <div className="flex gap-2">
-            <button className="p-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors flex items-center justify-center">
-              <span className="material-symbols-outlined text-[20px]">filter_list</span>
-            </button>
-            <button 
-              onClick={() => alert('Downloading comprehensive faculty roster CSV sheet...')}
-              className="p-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors flex items-center justify-center"
-            >
-              <span className="material-symbols-outlined text-[20px]">download</span>
-            </button>
-          </div>
+          <h4 className="font-headline-sm text-headline-sm text-on-surface font-semibold">Faculty Roster</h4>
+          <span className="text-xs font-semibold px-2.5 py-1 bg-primary/10 text-primary rounded-full uppercase">
+            MongoDB Directory
+          </span>
         </div>
+
+        {error && (
+          <div className="p-4 bg-error-container text-on-error-container border-b border-error/10 text-sm font-semibold">
+            {error}
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container-lowest border-b border-outline-variant/30 text-on-surface-variant font-label-sm uppercase">
                 <th className="px-stack-lg py-4 font-semibold tracking-wider">Instructor</th>
-                <th className="px-stack-lg py-4 font-semibold tracking-wider">Specialty</th>
-                <th className="px-stack-lg py-4 font-semibold tracking-wider">Joined</th>
-                <th className="px-stack-lg py-4 font-semibold tracking-wider">Contact</th>
-                <th className="px-stack-lg py-4 font-semibold tracking-wider">Actions</th>
+                <th className="px-stack-lg py-4 font-semibold tracking-wider">Specialty / Subject</th>
+                <th className="px-stack-lg py-4 font-semibold tracking-wider">Qualification</th>
+                <th className="px-stack-lg py-4 font-semibold tracking-wider">Experience</th>
+                <th className="px-stack-lg py-4 font-semibold tracking-wider">Status</th>
+                <th className="px-stack-lg py-4 font-semibold tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/30 text-body-sm font-light text-on-surface-variant">
-              {teachers.map((teacher) => (
-                <tr key={teacher.id} className="hover:bg-surface-container-low/50 transition-colors">
-                  <td className="px-stack-lg py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${teacher.color}`}>
-                        {teacher.initials}
-                      </div>
-                      <div>
-                        <p className="font-label-md text-label-md text-on-surface font-bold">{teacher.name}</p>
-                        <p className="text-[12px] text-on-surface-variant">ID: {teacher.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-stack-lg py-4 font-body-sm text-body-sm text-on-surface">{teacher.specialty}</td>
-                  <td className="px-stack-lg py-4">{teacher.joined}</td>
-                  <td className="px-stack-lg py-4">{teacher.email}</td>
-                  <td className="px-stack-lg py-4">
-                    <button 
-                      onClick={() => handleEditTeacher(teacher.name)}
-                      className="text-primary hover:text-on-primary-container flex items-center justify-center p-1"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">edit</span>
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="p-12 text-center text-on-surface-variant">
+                    <span className="material-symbols-outlined animate-spin text-3xl text-primary block mb-2">sync</span>
+                    Loading dynamic instructor database...
                   </td>
                 </tr>
-              ))}
+              ) : teachers.map((teacher) => {
+                const initials = (teacher.name || 'Teacher').split(' ').map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2) || 'TC';
+                
+                return (
+                  <tr key={teacher._id} className="hover:bg-surface-container-low/50 transition-colors group">
+                    <td className="px-stack-lg py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-container text-primary flex items-center justify-center font-bold text-sm">
+                          {teacher.photo ? (
+                            <img src={getImageUrl(teacher.photo)} alt={teacher.name || 'Teacher'} className="w-full h-full object-cover" />
+                          ) : (
+                            initials
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-label-md text-label-md text-on-surface font-bold">{teacher.name || 'Teacher'}</p>
+                          <p className="text-[12px] text-on-surface-variant">{teacher.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-stack-lg py-4 font-body-sm text-body-sm text-on-surface font-medium">{teacher.subject}</td>
+                    <td className="px-stack-lg py-4">{teacher.qualification}</td>
+                    <td className="px-stack-lg py-4">{teacher.experience}</td>
+                    <td className="px-stack-lg py-4">
+                      <button 
+                        onClick={() => toggleTeacherStatus(teacher)}
+                        className={`flex items-center font-label-md text-label-md transition-colors ${
+                          teacher.status ? 'text-green-600 hover:text-green-800' : 'text-on-surface-variant/75 hover:text-primary'
+                        }`}
+                        title="Toggle availability status"
+                      >
+                        <span className={`w-2.5 h-2.5 rounded-full mr-2 ${teacher.status ? 'bg-green-500' : 'bg-outline-variant'}`}></span>
+                        {teacher.status ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-stack-lg py-4 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button 
+                          onClick={() => openDetailModal(teacher)}
+                          className="text-on-surface-variant hover:text-primary hover:bg-surface-container p-2 rounded-full flex items-center justify-center transition-colors"
+                          title="View Details"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">visibility</span>
+                        </button>
+                        <button 
+                          onClick={() => openEditModal(teacher)}
+                          className="text-primary hover:bg-surface-container p-2 rounded-full flex items-center justify-center transition-colors"
+                          title="Edit Instructor"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">edit</span>
+                        </button>
+                        <button 
+                          onClick={() => openDeleteConfirm(teacher)}
+                          className="text-error hover:bg-surface-container p-2 rounded-full flex items-center justify-center transition-colors"
+                          title="Delete Instructor"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!loading && teachers.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-on-surface-variant font-light">
+                    No faculty profiles registered in MongoDB.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-        <div className="px-stack-lg py-4 flex justify-center border-t border-outline-variant bg-surface-container-low/30">
-          <button 
-            onClick={() => alert('Loading secondary archives of teaching faculty members...')}
-            className="font-label-md text-label-md text-primary flex items-center gap-2 hover:gap-3 transition-all font-bold"
-          >
-            Load 15 More <span className="material-symbols-outlined">expand_more</span>
-          </button>
-        </div>
       </div>
 
-      {/* Modal: Add New Teacher */}
-      {isModalOpen && (
+      {/* Modal: Add or Edit Instructor */}
+      {isFormModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCloseModal}></div>
-          <div className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in">
-            <div className="px-stack-lg py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low text-left">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">Add New Faculty Member</h3>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setIsFormModalOpen(false)}></div>
+          <div className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
+            <div className="px-stack-lg py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                {formMode === 'create' ? 'Add New Faculty Member' : 'Edit Faculty Member'}
+              </h3>
               <button 
-                className="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center" 
-                onClick={handleCloseModal}
+                className="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center text-on-surface-variant" 
+                onClick={() => setIsFormModalOpen(false)}
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleAddTeacher} className="p-stack-lg space-y-6 text-left">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleFormSubmit} className="p-stack-lg space-y-5 max-h-[75vh] overflow-y-auto">
+              
+              {/* Photo Upload Area */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-surface-container-low rounded-xl border border-outline-variant/30">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-container border border-outline-variant flex items-center justify-center shrink-0">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40">person</span>
+                  )}
+                </div>
+                <div className="text-center sm:text-left space-y-1.5">
+                  <h4 className="font-label-md text-label-md font-semibold text-on-surface">Instructor Headshot</h4>
+                  <p className="text-[11px] text-on-surface-variant">JPEG, JPG, PNG or WEBP. Max 5MB file limit.</p>
+                  <div className="flex gap-2">
+                    <button 
+                      type="button"
+                      onClick={() => fileInputRef.current.click()}
+                      className="px-3 py-1 bg-primary text-on-primary text-xs font-semibold rounded hover:opacity-90 active:scale-95 transition-all"
+                    >
+                      Choose Photo
+                    </button>
+                    {photoPreview && (
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setPhotoFile(null);
+                          setPhotoPreview('');
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
+                        className="px-3 py-1 bg-surface-container-high text-on-surface border border-outline-variant text-xs font-semibold rounded hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handlePhotoChange} 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Full Name</label>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Full Name *</label>
                   <input 
                     name="name"
-                    value={newTeacher.name}
+                    value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
-                    placeholder="e.g. Dr. Emily Watson" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. Dr. Sarah Jenkins" 
                     type="text"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Email Address</label>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Email Address *</label>
                   <input 
                     name="email"
-                    value={newTeacher.email}
+                    value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
-                    placeholder="e.g. e.watson@eduacademy.com" 
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. sarah.j@laxmi.com" 
                     type="email"
                     required
                   />
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Primary Specialty</label>
-                  <select 
-                    name="specialty"
-                    value={newTeacher.specialty}
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Phone Number *</label>
+                  <input 
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm appearance-none bg-surface-container-lowest cursor-pointer"
-                  >
-                    <option value="Full Stack Development">Full Stack Development</option>
-                    <option value="Data Science">Data Science</option>
-                    <option value="Cybersecurity">Cybersecurity</option>
-                    <option value="UI/UX Design">UI/UX Design</option>
-                    <option value="Cloud Architecture">Cloud Architecture</option>
-                  </select>
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. +91 98765 43210" 
+                    type="text"
+                    required
+                  />
                 </div>
                 <div className="space-y-1">
-                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Joining Date</label>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Subject / Specialty *</label>
                   <input 
-                    name="joinedDate"
-                    value={newTeacher.joinedDate}
+                    name="subject"
+                    value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest cursor-pointer" 
-                    type="date"
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. Full Stack Development" 
+                    type="text"
                     required
                   />
                 </div>
               </div>
-              
-              <div className="space-y-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider">Assigned Department</label>
-                <div className="flex flex-wrap gap-3 p-4 bg-surface-container-low rounded-lg">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      checked={newTeacher.departments.cs}
-                      onChange={() => handleCheckboxChange('cs')}
-                      className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer" 
-                      type="checkbox"
-                    />
-                    <span className="font-body-sm text-body-sm text-on-surface">Computer Science</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      checked={newTeacher.departments.it}
-                      onChange={() => handleCheckboxChange('it')}
-                      className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer" 
-                      type="checkbox"
-                    />
-                    <span className="font-body-sm text-body-sm text-on-surface">Information Technology</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      checked={newTeacher.departments.media}
-                      onChange={() => handleCheckboxChange('media')}
-                      className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer" 
-                      type="checkbox"
-                    />
-                    <span className="font-body-sm text-body-sm text-on-surface">Digital Media</span>
-                  </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Qualification *</label>
+                  <input 
+                    name="qualification"
+                    value={formData.qualification}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. MCA, M.Tech in CS" 
+                    type="text"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Experience Details *</label>
+                  <input 
+                    name="experience"
+                    value={formData.experience}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest" 
+                    placeholder="e.g. 5+ Years" 
+                    type="text"
+                    required
+                  />
                 </div>
               </div>
-              
+
+              <div className="space-y-1">
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider font-semibold">Description / Bio</label>
+                <textarea 
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="w-full px-4 py-2.5 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-sm text-body-sm bg-surface-container-lowest resize-none" 
+                  placeholder="Tell students about this instructor's career path, key expertise..." 
+                />
+              </div>
+
+              {/* Social Media Links */}
+              <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant/30 space-y-3">
+                <h4 className="font-label-md text-label-md font-semibold text-on-surface uppercase tracking-wide">Social Connect Profiles (Optional)</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-on-surface-variant block uppercase tracking-wider font-medium">Linkedin</label>
+                    <input 
+                      name="linkedin"
+                      value={formData.linkedin}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 rounded border border-outline-variant text-xs bg-surface-container-lowest outline-none focus:border-primary"
+                      placeholder="linkedin.com/in/username"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-on-surface-variant block uppercase tracking-wider font-medium">Facebook</label>
+                    <input 
+                      name="facebook"
+                      value={formData.facebook}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 rounded border border-outline-variant text-xs bg-surface-container-lowest outline-none focus:border-primary"
+                      placeholder="facebook.com/username"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-on-surface-variant block uppercase tracking-wider font-medium">Twitter / X</label>
+                    <input 
+                      name="twitter"
+                      value={formData.twitter}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 rounded border border-outline-variant text-xs bg-surface-container-lowest outline-none focus:border-primary"
+                      placeholder="twitter.com/username"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status checkbox */}
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  name="status"
+                  id="teacher_status_field"
+                  checked={formData.status}
+                  onChange={handleInputChange}
+                  className="w-4.5 h-4.5 text-primary bg-surface border-outline-variant rounded focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="teacher_status_field" className="font-body-sm text-on-surface font-semibold cursor-pointer select-none">
+                  Enable active directory status (instructors will show on public faculty lists immediately)
+                </label>
+              </div>
+
+              {/* Form buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/30 mt-6">
                 <button 
                   className="px-6 py-2 border border-outline-variant text-on-surface-variant rounded-lg font-label-md hover:bg-surface-container transition-colors" 
-                  onClick={handleCloseModal} 
+                  onClick={() => setIsFormModalOpen(false)} 
                   type="button"
                 >
                   Cancel
                 </button>
                 <button 
-                  className="px-8 py-2 bg-primary text-on-primary rounded-lg font-label-md shadow-lg hover:scale-102 transition-transform active:scale-95 duration-100" 
+                  className="px-8 py-2 bg-primary text-on-primary rounded-lg font-label-md shadow-lg hover:scale-102 transition-transform active:scale-95 duration-100 font-bold" 
                   type="submit"
                 >
-                  Create Instructor Profile
+                  {formMode === 'create' ? 'Create Profile' : 'Save Changes'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: View Instructor Details */}
+      {isDetailModalOpen && selectedTeacher && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setIsDetailModalOpen(false)}></div>
+          <div className="relative w-full max-w-2xl bg-surface rounded-2xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
+            <div className="px-stack-lg py-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <div>
+                <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold">{selectedTeacher.name}</h3>
+                <p className="text-xs uppercase text-primary font-bold tracking-wider">{selectedTeacher.subject}</p>
+              </div>
+              <button 
+                className="p-2 hover:bg-surface-container rounded-full transition-colors flex items-center justify-center text-on-surface-variant" 
+                onClick={() => setIsDetailModalOpen(false)}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="p-stack-lg space-y-6 max-h-[75vh] overflow-y-auto">
+              <div className="flex flex-col sm:flex-row gap-6">
+                <div className="w-36 h-36 rounded-xl overflow-hidden bg-secondary-container border border-outline-variant shrink-0 mx-auto sm:mx-0">
+                  {selectedTeacher.photo ? (
+                    <img src={getImageUrl(selectedTeacher.photo)} alt={selectedTeacher.name || 'Teacher'} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-4xl">
+                      {(selectedTeacher.name || 'Teacher').split(' ').map(p => p.charAt(0)).join('').toUpperCase().substring(0,2)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">Qualification</h4>
+                      <p className="font-body-md text-on-surface font-medium">{selectedTeacher.qualification}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">Experience</h4>
+                      <p className="font-body-md text-on-surface font-medium">{selectedTeacher.experience}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-outline-variant/20">
+                    <div>
+                      <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">Email Address</h4>
+                      <p className="text-body-sm font-light text-on-surface flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-primary">mail</span> {selectedTeacher.email}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">Phone Number</h4>
+                      <p className="text-body-sm font-light text-on-surface flex items-center gap-1">
+                        <span className="material-symbols-outlined text-xs text-primary">phone</span> {selectedTeacher.phone}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider">Directory Visibility</h4>
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full mt-1 ${
+                      selectedTeacher.status ? 'bg-green-500/10 text-green-600' : 'bg-outline-variant/10 text-on-surface-variant'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${selectedTeacher.status ? 'bg-green-500' : 'bg-outline-variant'}`}></span>
+                      {selectedTeacher.status ? 'Active & Visible' : 'Hidden'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] uppercase text-on-surface-variant font-bold tracking-wider mb-1">Biography</h4>
+                <p className="text-body-sm text-on-surface-variant font-light leading-relaxed whitespace-pre-line bg-surface-container-low p-4 rounded-xl border border-outline-variant/30">
+                  {selectedTeacher.bio || 'No career biography registered yet.'}
+                </p>
+              </div>
+
+              {selectedTeacher.socialLinks && (selectedTeacher.socialLinks.facebook || selectedTeacher.socialLinks.twitter || selectedTeacher.socialLinks.linkedin) && (
+                <div className="pt-4 border-t border-outline-variant/30 flex items-center gap-3">
+                  <span className="text-[11px] uppercase text-on-surface-variant font-bold">Social Handles:</span>
+                  <div className="flex gap-2">
+                    {selectedTeacher.socialLinks.linkedin && (
+                      <span className="text-xs px-2.5 py-1 bg-surface-container rounded border border-outline-variant font-medium">
+                        LinkedIn: {selectedTeacher.socialLinks.linkedin}
+                      </span>
+                    )}
+                    {selectedTeacher.socialLinks.facebook && (
+                      <span className="text-xs px-2.5 py-1 bg-surface-container rounded border border-outline-variant font-medium">
+                        Facebook: {selectedTeacher.socialLinks.facebook}
+                      </span>
+                    )}
+                    {selectedTeacher.socialLinks.twitter && (
+                      <span className="text-xs px-2.5 py-1 bg-surface-container rounded border border-outline-variant font-medium">
+                        Twitter: {selectedTeacher.socialLinks.twitter}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Popup: Delete Teacher */}
+      {isDeleteConfirmOpen && teacherToDelete && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsDeleteConfirmOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface rounded-2xl shadow-2xl p-6 border border-outline-variant animate-scale-in text-left">
+            <div className="flex items-center gap-3 text-red-500 mb-4">
+              <span className="material-symbols-outlined text-[32px]">warning</span>
+              <h3 className="font-headline-sm text-headline-sm font-semibold">Delete Instructor</h3>
+            </div>
+            
+            <p className="text-body-md text-on-surface-variant font-light mb-6">
+              Are you sure you want to permanently remove <span className="font-bold text-on-surface">"{teacherToDelete.name}"</span> from the faculty directory database? This action is irreversible and will delete their photo files from server storage.
+            </p>
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-sm hover:bg-surface-container transition-all"
+              >
+                No, Keep
+              </button>
+              <button 
+                onClick={executeDeleteTeacher}
+                className="px-5 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow-md hover:bg-red-750 active:scale-95 transition-all"
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

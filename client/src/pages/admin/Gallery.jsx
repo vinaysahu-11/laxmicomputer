@@ -1,276 +1,334 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  getAlbums,
+  createAlbum,
+  updateAlbum,
+  deleteAlbum,
+  getGalleryItems,
+  createGalleryItem,
+  updateGalleryItem,
+  deleteGalleryItem,
+  getStorageUsage
+} from '../../services/galleryService';
+import api from '../../services/api';
 
 const Gallery = () => {
-  // 1. Initial State Data for Albums and Media Assets
-  const [albums, setAlbums] = useState([
-    { id: 'alb-1', name: 'Computer Lab', icon: 'folder', count: 5 },
-    { id: 'alb-2', name: 'Annual Events', icon: 'folder', count: 3 },
-    { id: 'alb-3', name: 'Certifications', icon: 'folder', count: 2 },
-    { id: 'alb-4', name: 'Sports Meet', icon: 'folder', count: 2 }
-  ]);
+  // Database States
+  const [albums, setAlbums] = useState([]);
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [selectedAlbum, setSelectedAlbum] = useState(null); // stores album object
+  const [storageUsage, setStorageUsage] = useState({ sizeInGB: 0, limitInGB: 10 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const [selectedAlbum, setSelectedAlbum] = useState('Computer Lab');
+  // UI States
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+  const [activeMenuId, setActiveMenuId] = useState(null); // tracks active album dropdown menu (albumId)
 
-  const [mediaAssets, setMediaAssets] = useState({
-    'Computer Lab': [
-      { id: 'img-1', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLoOoX4VRJUc03eQPRnt7aNcRuvodbp3XbG4dsmnSRXb5Eu9xupkXBgjryl6ggVSbhL9B40IIoXVHoZk5cZ1_TRGjyHR_MlJgzNmNqOKRPh4jvYjDgLXyUbv94ecXn8WCtPgZ_DLDb497M4jEt-pOT625QG6th2vsuepepE7EylYBXWYTNPVhurM1Xv_J3SyBTLoFvl5W6RXh46L2nO9pobP8LeCsHeTpn3CvrAy9xez7Rc2xwcJxAxjIznDgh5IYiWEHxO3NGYNb8', alt: 'Computer Workstations Lab' },
-      { id: 'img-2', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsazeN8QSrl2QnCidnnmIAP8LUnhuWmioQFwrFXZt0INn4IN-TRZw8GEX4e_dC8DSu5WEC53OBKaVJnxTgnKhYuvyWTKMIC1fqxmzndtFBms5z48XetVbyKDacZ_nzDnAtQSkikXFJGz2e8Wu5Hmlh6fuBN1Z2TUWQftru2NvvuzkAzUHIsBWOPQD7pr8Xet9eUs5COSHlN88uokz8JAkS9-Q0SHqku8DuqySJ52otAVhXftNHBDoOzIAPyIixMj9ndOjmeCpQa-5p', alt: 'Candid Collaborative Study' },
-      { id: 'img-3', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBlaTLbFgWZJTgSefYEiVTyvedknxs5fNB5R1W6DW11bJeiD02XVtsFMLzxpczSj9mM1lH7U68c27OUPThpRxkuXOtMLWzXQul6Bxu8ZsuPQeHgev_y-crTAcOSf8zNDUPUCHrMvAy5ankldAF3Jmd60O5J-Yb80SvcSo7zof0Gj4yntbvj4jipQBp0uyqMu_H3LTcwDlZ_fj6q0-NQ7jP0YbVLFC96kueJPrgq3_cZ7379J1NDO2EOkg5sPr2kv0t6wShNU3oBdSWL', alt: 'Mechanical keyboard coding focus' },
-      { id: 'img-4', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMeHFJRmGdwOldgW3yruZwfG4HnQyXDjDBRvs6-MQy1OCTE-ba9xfjIQPIHKnvb_0wiS0Qm12RqTvD_f79iDMCOhQrYO5GhjqUVQVf6Br3qrl6V-Jkbt-zjsO3x2jvROet31Ra2v517ouiagbQnXhCDqj9PGG8d7TQ-rEYUOzq1Hikj0AgFSb7oSMbWYOClUvkKVIesnKmmBTsRb8eFSk2GuuYeJcb4jFB0j7RFAHBOvtT10jlXpEbAvdAboPWDladCGWWMNhl6AGI', alt: 'Robotics Workshop Lecture Hall' },
-      { id: 'img-5', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUTz6gndJwkEtGVSGYa6oel6osdqhWR_JdgbPbdSe5HYo5EIgpvmoOmpWfZI6oowH0Rz76pkIFjVNoxEjaXBMTwpvn6bmmAk2czTz_M-uxPvhI19x1Y1lmP7ArOcYYByYuFOrpJncHqjNf6XtjYgpm7WIfbyXMgKLjMs14qfJmSsnJ9kvW-Yqden8ajj1UPhNeZ0xx-C5wUSdtikV1Jo21kYZR2wry5mIxz_-BMsrYuuUa5MIdImHojeg8Rafm1RVcR5jYj4RgemBO', alt: 'Artistic portal classroom visualizations' }
-    ],
-    'Annual Events': [
-      { id: 'img-201', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsazeN8QSrl2QnCidnnmIAP8LUnhuWmioQFwrFXZt0INn4IN-TRZw8GEX4e_dC8DSu5WEC53OBKaVJnxTgnKhYuvyWTKMIC1fqxmzndtFBms5z48XetVbyKDacZ_nzDnAtQSkikXFJGz2e8Wu5Hmlh6fuBN1Z2TUWQftru2NvvuzkAzUHIsBWOPQD7pr8Xet9eUs5COSHlN88uokz8JAkS9-Q0SHqku8DuqySJ52otAVhXftNHBDoOzIAPyIixMj9ndOjmeCpQa-5p', alt: 'Annual Day Celebrations' },
-      { id: 'img-202', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMeHFJRmGdwOldgW3yruZwfG4HnQyXDjDBRvs6-MQy1OCTE-ba9xfjIQPIHKnvb_0wiS0Qm12RqTvD_f79iDMCOhQrYO5GhjqUVQVf6Br3qrl6V-Jkbt-zjsO3x2jvROet31Ra2v517ouiagbQnXhCDqj9PGG8d7TQ-rEYUOzq1Hikj0AgFSb7oSMbWYOClUvkKVIesnKmmBTsRb8eFSk2GuuYeJcb4jFB0j7RFAHBOvtT10jlXpEbAvdAboPWDladCGWWMNhl6AGI', alt: 'Hackathon Event 2023' },
-      { id: 'img-203', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUTz6gndJwkEtGVSGYa6oel6osdqhWR_JdgbPbdSe5HYo5EIgpvmoOmpWfZI6oowH0Rz76pkIFjVNoxEjaXBMTwpvn6bmmAk2czTz_M-uxPvhI19x1Y1lmP7ArOcYYByYuFOrpJncHqjNf6XtjYgpm7WIfbyXMgKLjMs14qfJmSsnJ9kvW-Yqden8ajj1UPhNeZ0xx-C5wUSdtikV1Jo21kYZR2wry5mIxz_-BMsrYuuUa5MIdImHojeg8Rafm1RVcR5jYj4RgemBO', alt: 'Faculty Conference' }
-    ],
-    'Certifications': [
-      { id: 'img-301', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUTz6gndJwkEtGVSGYa6oel6osdqhWR_JdgbPbdSe5HYo5EIgpvmoOmpWfZI6oowH0Rz76pkIFjVNoxEjaXBMTwpvn6bmmAk2czTz_M-uxPvhI19x1Y1lmP7ArOcYYByYuFOrpJncHqjNf6XtjYgpm7WIfbyXMgKLjMs14qfJmSsnJ9kvW-Yqden8ajj1UPhNeZ0xx-C5wUSdtikV1Jo21kYZR2wry5mIxz_-BMsrYuuUa5MIdImHojeg8Rafm1RVcR5jYj4RgemBO', alt: 'Student Diploma Handover' },
-      { id: 'img-302', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLoOoX4VRJUc03eQPRnt7aNcRuvodbp3XbG4dsmnSRXb5Eu9xupkXBgjryl6ggVSbhL9B40IIoXVHoZk5cZ1_TRGjyHR_MlJgzNmNqOKRPh4jvYjDgLXyUbv94ecXn8WCtPgZ_DLDb497M4jEt-pOT625QG6th2vsuepepE7EylYBXWYTNPVhurM1Xv_J3SyBTLoFvl5W6RXh46L2nO9pobP8LeCsHeTpn3CvrAy9xez7Rc2xwcJxAxjIznDgh5IYiWEHxO3NGYNb8', alt: 'Python Certified Batch' }
-    ],
-    'Sports Meet': [
-      { id: 'img-401', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMeHFJRmGdwOldgW3yruZwfG4HnQyXDjDBRvs6-MQy1OCTE-ba9xfjIQPIHKnvb_0wiS0Qm12RqTvD_f79iDMCOhQrYO5GhjqUVQVf6Br3qrl6V-Jkbt-zjsO3x2jvROet31Ra2v517ouiagbQnXhCDqj9PGG8d7TQ-rEYUOzq1Hikj0AgFSb7oSMbWYOClUvkKVIesnKmmBTsRb8eFSk2GuuYeJcb4jFB0j7RFAHBOvtT10jlXpEbAvdAboPWDladCGWWMNhl6AGI', alt: 'Indoor Robotics Competition' },
-      { id: 'img-402', src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsazeN8QSrl2QnCidnnmIAP8LUnhuWmioQFwrFXZt0INn4IN-TRZw8GEX4e_dC8DSu5WEC53OBKaVJnxTgnKhYuvyWTKMIC1fqxmzndtFBms5z48XetVbyKDacZ_nzDnAtQSkikXFJGz2e8Wu5Hmlh6fuBN1Z2TUWQftru2NvvuzkAzUHIsBWOPQD7pr8Xet9eUs5COSHlN88uokz8JAkS9-Q0SHqku8DuqySJ52otAVhXftNHBDoOzIAPyIixMj9ndOjmeCpQa-5p', alt: 'Campus Volleyball Final' }
-    ]
-  });
+  // Drag & Drop / Upload States
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // Gallery log data state
-  const [galleryLogs, setGalleryLogs] = useState([
-    { id: 'log-1', action: 'Uploaded 5 photos', album: 'Computer Lab', author: 'Admin Sarah', time: '2 hours ago', color: 'bg-primary-container' },
-    { id: 'log-2', action: 'Created new album', album: 'Sports Meet 2024', author: 'Admin Mike', time: 'Yesterday, 14:30', color: 'bg-tertiary' },
-    { id: 'log-3', action: 'Deleted item', album: 'Annual Events (IMG_992)', author: 'Admin Sarah', time: '3 days ago', color: 'bg-error' }
-  ]);
-
-  // Autocomplete search states
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Bulk Selection States
-  const [selectedMediaIds, setSelectedMediaIds] = useState([]);
-
-  // Storage utilization
-  const [storageUsage, setStorageUsage] = useState(6.5); // in GB
-
-  // Modals and Alerts
-  const [toast, setToast] = useState({ visible: false, message: '' });
-  const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
+  // Modals States
+  const [isCreateAlbumModalOpen, setIsCreateAlbumModalOpen] = useState(false);
+  const [isEditAlbumModalOpen, setIsEditAlbumModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditImageModalOpen, setIsEditImageModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isDeleteAlbumConfirmOpen, setIsDeleteAlbumConfirmOpen] = useState(false);
 
+  // Modal target objects
+  const [albumToEdit, setAlbumToEdit] = useState(null);
+  const [albumToDelete, setAlbumToDelete] = useState(null);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageToPreview, setImageToPreview] = useState(null);
+
+  // Form states
   const [newAlbumName, setNewAlbumName] = useState('');
-  
+  const [newAlbumCover, setNewAlbumCover] = useState(null);
+
+  const [editAlbumName, setEditAlbumName] = useState('');
+  const [editAlbumCover, setEditAlbumCover] = useState(null);
+
   const [uploadFormData, setUploadFormData] = useState({
     title: '',
-    albumTarget: 'Computer Lab',
-    sampleIndex: 'img-1'
+    imageFile: null
   });
 
-  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [editImageTitle, setEditImageTitle] = useState('');
+  const [editImageAlbumId, setEditImageAlbumId] = useState('');
 
-  // 2. Micro-interactions and triggers
-  const triggerToast = (message) => {
-    setToast({ visible: true, message });
+  // File input refs
+  const uploadFileInputRef = useRef(null);
+  const albumCoverInputRef = useRef(null);
+  const editAlbumCoverInputRef = useRef(null);
+
+  // Load all records from backend
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [albumsData, galleryData, storageData] = await Promise.all([
+        getAlbums(),
+        getGalleryItems(),
+        getStorageUsage()
+      ]);
+      
+      setAlbums(albumsData || []);
+      setGalleryItems(galleryData || []);
+      setStorageUsage(storageData || { sizeInGB: 0, limitInGB: 10 });
+      setError('');
+
+      // Auto-select first album if none selected or if selected is missing
+      if (albumsData && albumsData.length > 0) {
+        if (!selectedAlbum) {
+          setSelectedAlbum(albumsData[0]);
+        } else {
+          const stillExists = albumsData.find(a => a._id === selectedAlbum._id);
+          if (stillExists) {
+            setSelectedAlbum(stillExists);
+          } else {
+            setSelectedAlbum(albumsData[0]);
+          }
+        }
+      } else {
+        setSelectedAlbum(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to fetch gallery media and albums from MongoDB.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Helper function to show notifications
+  const triggerToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type });
     setTimeout(() => {
-      setToast({ visible: false, message: '' });
+      setToast(prev => ({ ...prev, visible: false }));
     }, 3000);
   };
 
-  const handleCreateAlbumSubmit = (e) => {
+  // 1. ALBUM CRUD HANDLERS
+  const handleCreateAlbumSubmit = async (e) => {
     e.preventDefault();
-    if (!newAlbumName) {
-      alert('Please specify an album name.');
-      return;
+    if (!newAlbumName.trim()) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('name', newAlbumName);
+      if (newAlbumCover) {
+        formData.append('coverImage', newAlbumCover);
+      }
+
+      await createAlbum(formData);
+      triggerToast(`Album "${newAlbumName}" successfully created!`);
+      
+      setIsCreateAlbumModalOpen(false);
+      setNewAlbumName('');
+      setNewAlbumCover(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error creating album.');
     }
+  };
 
-    if (mediaAssets[newAlbumName]) {
-      triggerToast(`An album with the name "${newAlbumName}" already exists.`);
-      return;
+  const handleUpdateAlbumSubmit = async (e) => {
+    e.preventDefault();
+    if (!editAlbumName.trim() || !albumToEdit) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('name', editAlbumName);
+      if (editAlbumCover) {
+        formData.append('coverImage', editAlbumCover);
+      }
+
+      await updateAlbum(albumToEdit._id, formData);
+      triggerToast('Album category updated successfully!');
+      
+      setIsEditAlbumModalOpen(false);
+      setAlbumToEdit(null);
+      setEditAlbumName('');
+      setEditAlbumCover(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error updating album.');
     }
+  };
 
-    // Add new album to list
-    const newAlb = {
-      id: `alb-${Date.now()}`,
-      name: newAlbumName,
-      icon: 'folder',
-      count: 0
-    };
-    setAlbums(prev => [...prev, newAlb]);
-    setMediaAssets(prev => ({ ...prev, [newAlbumName]: [] }));
+  const handleDeleteAlbumSubmit = async () => {
+    if (!albumToDelete) return;
+    try {
+      await deleteAlbum(albumToDelete._id);
+      triggerToast(`Album "${albumToDelete.name}" and all its photos permanently deleted.`);
+      
+      setIsDeleteAlbumConfirmOpen(false);
+      setAlbumToDelete(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      triggerToast('Error deleting album.', 'error');
+    }
+  };
 
-    // Append log
-    const newLog = {
-      id: `log-${Date.now()}`,
-      action: 'Created new album',
-      album: newAlbumName,
-      author: 'Super Admin',
-      time: 'Just now',
-      color: 'bg-tertiary'
-    };
-    setGalleryLogs(prev => [newLog, ...prev]);
+  // 2. IMAGE UPLOAD & CRUD HANDLERS
+  const executeImageUpload = async (file, title) => {
+    if (!selectedAlbum || !file) return;
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
 
-    triggerToast(`Album "${newAlbumName}" successfully created!`);
-    setSelectedAlbum(newAlbumName);
-    setNewAlbumName('');
-    setIsAlbumModalOpen(false);
-    document.body.style.overflow = 'auto';
+      const formData = new FormData();
+      formData.append('title', title || file.name.substring(0, file.name.lastIndexOf('.')) || 'Untitled Image');
+      formData.append('albumId', selectedAlbum._id);
+      formData.append('image', file);
+
+      // Upload with progress tracking
+      await api.post('/gallery/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
+      });
+
+      triggerToast('Photo successfully uploaded to album!');
+      setIsUploadModalOpen(false);
+      setUploadFormData({ title: '', imageFile: null });
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert('Error uploading media. Please check file format and size limits.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleUploadPhotoSubmit = (e) => {
     e.preventDefault();
-    if (!uploadFormData.title) {
-      alert('Please provide a title for the media asset.');
+    if (!uploadFormData.imageFile) {
+      alert('Please select an image file to upload.');
       return;
     }
-
-    // Choose mockup source based on selected sampleIndex
-    let srcUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDLoOoX4VRJUc03eQPRnt7aNcRuvodbp3XbG4dsmnSRXb5Eu9xupkXBgjryl6ggVSbhL9B40IIoXVHoZk5cZ1_TRGjyHR_MlJgzNmNqOKRPh4jvYjDgLXyUbv94ecXn8WCtPgZ_DLDb497M4jEt-pOT625QG6th2vsuepepE7EylYBXWYTNPVhurM1Xv_J3SyBTLoFvl5W6RXh46L2nO9pobP8LeCsHeTpn3CvrAy9xez7Rc2xwcJxAxjIznDgh5IYiWEHxO3NGYNb8';
-    if (uploadFormData.sampleIndex === 'img-2') {
-      srcUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuAsazeN8QSrl2QnCidnnmIAP8LUnhuWmioQFwrFXZt0INn4IN-TRZw8GEX4e_dC8DSu5WEC53OBKaVJnxTgnKhYuvyWTKMIC1fqxmzndtFBms5z48XetVbyKDacZ_nzDnAtQSkikXFJGz2e8Wu5Hmlh6fuBN1Z2TUWQftru2NvvuzkAzUHIsBWOPQD7pr8Xet9eUs5COSHlN88uokz8JAkS9-Q0SHqku8DuqySJ52otAVhXftNHBDoOzIAPyIixMj9ndOjmeCpQa-5p';
-    } else if (uploadFormData.sampleIndex === 'img-3') {
-      srcUrl = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBlaTLbFgWZJTgSefYEiVTyvedknxs5fNB5R1W6DW11bJeiD02XVtsFMLzxpczSj9mM1lH7U68c27OUPThpRxkuXOtMLWzXQul6Bxu8ZsuPQeHgev_y-crTAcOSf8zNDUPUCHrMvAy5ankldAF3Jmd60O5J-Yb80SvcSo7zof0Gj4yntbvj4jipQBp0uyqMu_H3LTcwDlZ_fj6q0-NQ7jP0YbVLFC96kueJPrgq3_cZ7379J1NDO2EOkg5sPr2kv0t6wShNU3oBdSWL';
-    }
-
-    const newPhoto = {
-      id: `img-${Date.now()}`,
-      src: srcUrl,
-      alt: uploadFormData.title
-    };
-
-    const targetAlbum = uploadFormData.albumTarget;
-    setMediaAssets(prev => ({
-      ...prev,
-      [targetAlbum]: [newPhoto, ...prev[targetAlbum]]
-    }));
-
-    // Update album count stat
-    setAlbums(prev => prev.map(a => a.name === targetAlbum ? { ...a, count: a.count + 1 } : a));
-    
-    // Update storage metrics slightly
-    setStorageUsage(prev => Math.min(prev + 0.1, 10.0));
-
-    // Append log
-    const newLog = {
-      id: `log-${Date.now()}`,
-      action: `Uploaded photo: ${uploadFormData.title}`,
-      album: targetAlbum,
-      author: 'Super Admin',
-      time: 'Just now',
-      color: 'bg-primary-container'
-    };
-    setGalleryLogs(prev => [newLog, ...prev]);
-
-    triggerToast(`"${uploadFormData.title}" successfully added to ${targetAlbum}!`);
-    setSelectedAlbum(targetAlbum);
-    setUploadFormData({ title: '', albumTarget: targetAlbum, sampleIndex: 'img-1' });
-    setIsUploadModalOpen(false);
-    document.body.style.overflow = 'auto';
+    executeImageUpload(uploadFormData.imageFile, uploadFormData.title);
   };
 
-  const handleIndividualDelete = (photoId, photoAlt) => {
-    if (window.confirm(`Are you sure you want to delete visual asset "${photoAlt}"?`)) {
-      setMediaAssets(prev => ({
-        ...prev,
-        [selectedAlbum]: prev[selectedAlbum].filter(p => p.id !== photoId)
-      }));
-
-      setAlbums(prev => prev.map(a => a.name === selectedAlbum ? { ...a, count: Math.max(a.count - 1, 0) } : a));
-      setStorageUsage(prev => Math.max(prev - 0.1, 0));
-
-      const newLog = {
-        id: `log-${Date.now()}`,
-        action: `Deleted photo: ${photoAlt}`,
-        album: selectedAlbum,
-        author: 'Super Admin',
-        time: 'Just now',
-        color: 'bg-error'
-      };
-      setGalleryLogs(prev => [newLog, ...prev]);
-
-      triggerToast(`Media asset successfully deleted.`);
-    }
-  };
-
-  const handleMediaCheckToggle = (photoId) => {
-    setSelectedMediaIds(prev => 
-      prev.includes(photoId) ? prev.filter(id => id !== photoId) : [...prev, photoId]
-    );
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedMediaIds.length === 0) {
-      triggerToast('No items checked. Please select checkboxes on photo cards to bulk delete.');
-      return;
-    }
-
-    if (window.confirm(`Retract and delete all ${selectedMediaIds.length} checked assets simultaneously?`)) {
-      const removedCount = selectedMediaIds.length;
-      
-      setMediaAssets(prev => ({
-        ...prev,
-        [selectedAlbum]: prev[selectedAlbum].filter(p => !selectedMediaIds.includes(p.id))
-      }));
-
-      setAlbums(prev => prev.map(a => a.name === selectedAlbum ? { ...a, count: Math.max(a.count - removedCount, 0) } : a));
-      setStorageUsage(prev => Math.max(prev - (removedCount * 0.1), 0));
-
-      const newLog = {
-        id: `log-${Date.now()}`,
-        action: `Bulk deleted ${removedCount} items`,
-        album: selectedAlbum,
-        author: 'Super Admin',
-        time: 'Just now',
-        color: 'bg-error'
-      };
-      setGalleryLogs(prev => [newLog, ...prev]);
-
-      triggerToast(`Successfully bulk deleted ${removedCount} media assets.`);
-      setSelectedMediaIds([]);
-    }
-  };
-
-  const handleOpenEditPhoto = (photo) => {
-    setEditingPhoto({ ...photo });
-    setIsEditModalOpen(true);
-    document.body.style.overflow = 'hidden';
-  };
-
-  const handleCloseEditPhoto = () => {
-    setIsEditModalOpen(false);
-    setEditingPhoto(null);
-    document.body.style.overflow = 'auto';
-  };
-
-  const handleUpdatePhotoSubmit = (e) => {
+  // Drag & Drop Event Handlers
+  const handleDrag = (e) => {
     e.preventDefault();
-    setMediaAssets(prev => ({
-      ...prev,
-      [selectedAlbum]: prev[selectedAlbum].map(p => p.id === editingPhoto.id ? { ...editingPhoto } : p)
-    }));
-
-    handleCloseEditPhoto();
-    triggerToast('Media caption details updated successfully.');
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
   };
 
-  const activePhotos = mediaAssets[selectedAlbum] || [];
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (!droppedFile.type.startsWith('image/')) {
+        alert('Only image files (JPG, PNG, WEBP, JPEG) are allowed!');
+        return;
+      }
+      setUploadFormData({
+        title: droppedFile.name.substring(0, droppedFile.name.lastIndexOf('.')),
+        imageFile: droppedFile
+      });
+      setIsUploadModalOpen(true);
+    }
+  };
+
+  const handleUpdateImageSubmit = async (e) => {
+    e.preventDefault();
+    if (!editImageTitle.trim() || !imageToEdit) return;
+
+    try {
+      await updateGalleryItem(imageToEdit._id, {
+        title: editImageTitle,
+        albumId: editImageAlbumId
+      });
+      
+      triggerToast('Photo details updated successfully!');
+      setIsEditImageModalOpen(false);
+      setImageToEdit(null);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      triggerToast('Error updating image details.', 'error');
+    }
+  };
+
+  const handleDeleteImage = async (photo) => {
+    if (window.confirm(`Are you sure you want to permanently delete "${photo.title}"?`)) {
+      try {
+        await deleteGalleryItem(photo._id);
+        triggerToast('Image deleted successfully.');
+        loadData();
+      } catch (err) {
+        console.error(err);
+        triggerToast('Failed to delete image.', 'error');
+      }
+    }
+  };
+
+  // Menu items click outside close
+  useEffect(() => {
+    const handleCloseMenu = () => setActiveMenuId(null);
+    window.addEventListener('click', handleCloseMenu);
+    return () => window.removeEventListener('click', handleCloseMenu);
+  }, []);
+
+  const toggleAlbumMenu = (e, albumId) => {
+    e.stopPropagation();
+    if (activeMenuId === albumId) {
+      setActiveMenuId(null);
+    } else {
+      setActiveMenuId(albumId);
+    }
+  };
+
+  // Get photos in active selected album
+  const activePhotos = galleryItems.filter(p => selectedAlbum && p.albumId === selectedAlbum._id);
+
+  if (loading && albums.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+        <p className="text-on-surface-variant font-label-md">Loading dynamic media manager...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-stack-lg text-left">
-      
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-stack-lg text-left gap-4">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Gallery Management</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Media Library</h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1 max-w-2xl">
-            Curate and organize the academy's visual journey across lab activities and events.
+            Upload, sort, and manage campus photos across albums dynamically with drag & drop support.
           </p>
         </div>
-        <div className="flex gap-3 shrink-0">
+        <div className="flex gap-3 shrink-0 self-start md:self-auto">
           <button 
-            onClick={() => {
-              setNewAlbumName('');
-              setIsAlbumModalOpen(true);
-              document.body.style.overflow = 'hidden';
-            }}
+            onClick={() => setIsCreateAlbumModalOpen(true)}
             className="flex items-center gap-2 px-6 py-2.5 bg-secondary-container text-primary font-label-md text-label-md rounded-lg hover:scale-102 transition-transform duration-200 active:scale-95 shadow-sm"
           >
             <span className="material-symbols-outlined text-[18px]">create_new_folder</span>
@@ -278,85 +336,147 @@ const Gallery = () => {
           </button>
           <button 
             onClick={() => {
-              setUploadFormData({ title: '', albumTarget: selectedAlbum, sampleIndex: 'img-1' });
+              setUploadFormData({ title: '', imageFile: null });
               setIsUploadModalOpen(true);
-              document.body.style.overflow = 'hidden';
             }}
             className="flex items-center gap-2 px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:scale-102 transition-transform duration-200 active:scale-95 shadow-md"
           >
             <span className="material-symbols-outlined text-[18px]">upload</span>
-            <span>Upload Photos</span>
+            <span>Upload Photo</span>
           </button>
         </div>
       </div>
 
-      {/* Bento Grid Layout for Management */}
+      {/* Grid container */}
       <div className="grid grid-cols-12 gap-gutter text-left">
         
-        {/* Album Selection Panel (Left column) */}
+        {/* Left Side: Albums Panel & Storage */}
         <div className="col-span-12 lg:col-span-3 space-y-gutter">
-          <div className="bg-surface-container-lowest border border-outline-variant p-stack-md rounded-xl shadow-sm space-y-6">
-            <div>
-              <h3 className="font-label-md text-label-md font-bold text-on-surface-variant uppercase tracking-wider">
-                All Albums
-              </h3>
-            </div>
+          <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm space-y-6">
+            <h3 className="font-label-md text-label-md font-bold text-on-surface-variant uppercase tracking-wider">
+              Albums
+            </h3>
             
-            <div className="space-y-2">
-              {albums.map((alb) => (
-                <button
-                  key={alb.id}
-                  onClick={() => {
-                    setSelectedAlbum(alb.name);
-                    setSelectedMediaIds([]);
-                  }}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg font-medium transition-all ${
-                    selectedAlbum === alb.name
-                      ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
-                      : 'hover:bg-surface-container text-on-surface-variant font-light'
-                  }`}
-                >
-                  <span className="flex items-center">
-                    <span className={`material-symbols-outlined mr-3 text-[18px] ${selectedAlbum === alb.name ? 'fill-current' : ''}`}>
-                      {alb.icon}
-                    </span>
-                    {alb.name}
-                  </span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    selectedAlbum === alb.name ? 'bg-primary text-on-primary' : 'bg-surface-container-high'
-                  }`}>
-                    {mediaAssets[alb.name] ? mediaAssets[alb.name].length : 0}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {albums.length === 0 ? (
+              <p className="text-xs text-on-surface-variant italic">No albums created yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {albums.map((alb) => {
+                  const count = galleryItems.filter(item => item.albumId === alb._id).length;
+                  const isSelected = selectedAlbum && selectedAlbum._id === alb._id;
+                  
+                  return (
+                    <div 
+                      key={alb._id} 
+                      className={`group/item flex items-center justify-between w-full p-2.5 rounded-lg font-medium transition-all ${
+                        isSelected
+                          ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                          : 'hover:bg-surface-container text-on-surface-variant font-light'
+                      }`}
+                    >
+                      <button
+                        onClick={() => setSelectedAlbum(alb)}
+                        className="flex items-center flex-1 text-left min-w-0 pr-2"
+                      >
+                        <span className={`material-symbols-outlined mr-3 text-[18px] ${isSelected ? 'fill-current' : ''}`}>
+                          folder
+                        </span>
+                        <span className="truncate text-body-md leading-none">{alb.name}</span>
+                      </button>
 
+                      {/* Dropdown Menu actions for Album */}
+                      <div className="relative shrink-0 flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container-high'
+                        }`}>
+                          {count}
+                        </span>
+                        
+                        <button
+                          onClick={(e) => toggleAlbumMenu(e, alb._id)}
+                          className="p-1 text-on-surface-variant/70 hover:bg-black/5 dark:hover:bg-white/10 rounded-full flex items-center justify-center transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">more_vert</span>
+                        </button>
+
+                        {activeMenuId === alb._id && (
+                          <div 
+                            className="absolute right-0 top-7 bg-surface-container-lowest border border-outline-variant shadow-lg rounded-lg py-1.5 w-36 z-30 font-label-md text-label-md"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => {
+                                setAlbumToEdit(alb);
+                                setEditAlbumName(alb.name);
+                                setEditAlbumCover(null);
+                                setIsEditAlbumModalOpen(true);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-on-surface hover:bg-surface-container text-left font-light"
+                            >
+                              <span className="material-symbols-outlined text-sm">edit</span> Edit Cover / Name
+                            </button>
+                            <button
+                              onClick={() => {
+                                setAlbumToDelete(alb);
+                                setIsDeleteAlbumConfirmOpen(true);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-error hover:bg-error-container/10 text-left font-bold"
+                            >
+                              <span className="material-symbols-outlined text-sm">delete</span> Delete Album
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Disk Storage widget */}
             <div className="pt-6 border-t border-outline-variant space-y-2">
               <h4 className="font-label-sm text-label-sm font-bold text-on-surface-variant uppercase tracking-wider">
-                Storage Usage
+                Storage Utilization
               </h4>
               <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
                 <div 
                   className="bg-primary h-full transition-all duration-1000" 
-                  style={{ width: `${(storageUsage / 10.0) * 100}%` }}
+                  style={{ width: `${(storageUsage.sizeInGB / storageUsage.limitInGB) * 100}%` }}
                 ></div>
               </div>
               <p className="text-[10px] text-on-surface-variant font-bold">
-                {storageUsage.toFixed(1)}GB / 10GB ({((storageUsage / 10.0) * 100).toFixed(0)}%)
+                {storageUsage.sizeInGB >= 0.001 ? storageUsage.sizeInGB.toFixed(3) : (storageUsage.sizeInGB * 1024).toFixed(1) + 'MB'} / {storageUsage.limitInGB}GB ({((storageUsage.sizeInGB / storageUsage.limitInGB) * 100).toFixed(2)}%)
               </p>
             </div>
           </div>
         </div>
 
-        {/* Main Gallery Canvas (Right column) */}
-        <div className="col-span-12 lg:col-span-9">
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden min-h-[600px] flex flex-col justify-between">
+        {/* Right Side: Main Drag-and-drop Image Canvas */}
+        <div 
+          className="col-span-12 lg:col-span-9"
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+        >
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden min-h-[600px] flex flex-col justify-between relative">
             
+            {/* Overlay feedback for Drag over */}
+            {dragActive && (
+              <div className="absolute inset-0 bg-primary/10 border-4 border-dashed border-primary z-20 flex flex-col items-center justify-center backdrop-blur-xs transition-all pointer-events-none">
+                <span className="material-symbols-outlined text-primary text-6xl animate-bounce">upload_file</span>
+                <h3 className="font-headline-md text-primary font-bold mt-2">Drop image file here to upload</h3>
+                <p className="text-on-surface-variant text-sm mt-1">Supports JPG, PNG, JPEG, WEBP</p>
+              </div>
+            )}
+
             {/* Control Bar */}
             <div className="px-stack-md py-4 border-b border-outline-variant flex justify-between items-center bg-surface flex-wrap gap-2">
               <div>
                 <span className="font-headline-sm text-headline-sm font-bold">
-                  {selectedAlbum} 
+                  {selectedAlbum ? selectedAlbum.name : 'Select Album'}
                   <span className="text-on-surface-variant font-light opacity-50 ml-2 text-sm uppercase">
                     {activePhotos.length} items
                   </span>
@@ -381,128 +501,121 @@ const Gallery = () => {
                 >
                   <span className="material-symbols-outlined">list</span>
                 </button>
-                
-                <div className="w-px h-6 bg-outline-variant mx-2"></div>
-                
-                <button 
-                  onClick={handleBulkDelete}
-                  className={`flex items-center font-bold text-xs hover:text-error transition-colors px-3 py-1.5 rounded-lg ${
-                    selectedMediaIds.length > 0 ? 'text-error bg-error-container/20' : 'text-on-surface-variant/50'
-                  }`}
-                >
-                  <span className="material-symbols-outlined mr-1.5 text-[18px]">delete</span>
-                  <span>Bulk Delete {selectedMediaIds.length > 0 && `(${selectedMediaIds.length})`}</span>
-                </button>
-                
-                <button 
-                  onClick={() => triggerToast('Toggling dynamic media manual drag orderings...')}
-                  className="flex items-center text-on-surface-variant font-bold text-xs hover:text-primary transition-colors px-3 py-1.5 rounded-lg border border-outline-variant/30"
-                >
-                  <span className="material-symbols-outlined mr-1.5 text-[18px]">reorder</span>
-                  <span>Reorder</span>
-                </button>
               </div>
             </div>
 
-            {/* Asset Grid / List View */}
+            {/* Gallery images display */}
             <div className="p-stack-md flex-1">
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {/* Photo Cards mapping */}
-                  {activePhotos.map((photo) => (
-                    <div 
-                      key={photo.id}
-                      className="relative group aspect-square rounded-lg overflow-hidden border border-outline-variant hover-lift bg-surface-container transition-all"
-                    >
-                      <img 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        alt={photo.alt}
-                        src={photo.src}
-                      />
-                      
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-between p-3">
-                        <div className="flex justify-between items-center">
-                          <input 
-                            type="checkbox"
-                            checked={selectedMediaIds.includes(photo.id)}
-                            onChange={() => handleMediaCheckToggle(photo.id)}
-                            className="w-5 h-5 rounded border-white/40 bg-transparent text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <button 
-                            onClick={() => handleOpenEditPhoto(photo)}
-                            className="bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white hover:bg-white/40 transition-colors flex items-center justify-center"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">more_vert</span>
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleOpenEditPhoto(photo)}
-                            className="flex-grow py-1.5 bg-white hover:bg-surface-container text-on-surface font-label-sm text-label-sm rounded-md shadow-sm active:scale-95 duration-100 font-bold text-xs"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleIndividualDelete(photo.id, photo.alt)}
-                            className="bg-error text-on-error p-1.5 rounded-md flex items-center justify-center active:scale-95 duration-100"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                          </button>
+              {!selectedAlbum ? (
+                <div className="py-16 text-center text-on-surface-variant font-light italic">
+                  Select an album from the left sidebar to display images.
+                </div>
+              ) : activePhotos.length === 0 ? (
+                <div className="py-16 text-center text-on-surface-variant font-light">
+                  <span className="material-symbols-outlined text-primary text-5xl mb-2">add_photo_alternate</span>
+                  <p className="font-body-lg">This album is currently empty.</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Drag and drop images anywhere here or click upload above to add photos.</p>
+                </div>
+              ) : viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 text-left">
+                  {activePhotos.map((photo) => {
+                    const imgSrc = photo.image.startsWith('/uploads') ? `http://localhost:5000${photo.image}` : photo.image;
+                    
+                    return (
+                      <div 
+                        key={photo._id}
+                        className="relative group aspect-square rounded-lg overflow-hidden border border-outline-variant hover-lift bg-surface-container transition-all"
+                      >
+                        <img 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                          alt={photo.title}
+                          src={imgSrc}
+                        />
+                        
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-between p-3">
+                          <div className="flex justify-end">
+                            <button 
+                              onClick={() => {
+                                setImageToPreview(photo);
+                                setIsPreviewModalOpen(true);
+                              }}
+                              className="bg-white/20 backdrop-blur-md p-1.5 rounded-full text-white hover:bg-white/40 transition-colors flex items-center justify-center"
+                              title="Preview"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                setImageToEdit(photo);
+                                setEditImageTitle(photo.title);
+                                setEditImageAlbumId(photo.albumId);
+                                setIsEditImageModalOpen(true);
+                              }}
+                              className="flex-grow py-1.5 bg-white hover:bg-surface-container text-on-surface font-label-sm text-label-sm rounded-md shadow-sm active:scale-95 duration-100 font-bold text-xs"
+                            >
+                              Edit / Move
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteImage(photo)}
+                              className="bg-error text-on-error p-1.5 rounded-md flex items-center justify-center active:scale-95 duration-100"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-
-                  {/* Add New Media Upload Placeholder Card */}
-                  <button 
-                    onClick={() => {
-                      setUploadFormData({ title: '', albumTarget: selectedAlbum, sampleIndex: 'img-1' });
-                      setIsUploadModalOpen(true);
-                      document.body.style.overflow = 'hidden';
-                    }}
-                    className="aspect-square rounded-lg border-2 border-dashed border-outline-variant hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center p-6 text-on-surface-variant group"
-                  >
-                    <span className="material-symbols-outlined text-4xl mb-2 group-hover:scale-110 transition-transform text-primary">add_a_photo</span>
-                    <span className="font-label-md text-label-md font-bold">Add New Media</span>
-                    <span className="text-[10px] mt-1 opacity-60">JPEG, PNG up to 10MB</span>
-                  </button>
+                    );
+                  })}
                 </div>
               ) : (
-                /* List View Layout */
+                /* List View */
                 <div className="space-y-2 text-left">
-                  {activePhotos.map((photo) => (
-                    <div key={photo.id} className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/60 flex items-center justify-between gap-4 hover:border-primary transition-all">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <input 
-                          type="checkbox"
-                          checked={selectedMediaIds.includes(photo.id)}
-                          onChange={() => handleMediaCheckToggle(photo.id)}
-                          className="w-5 h-5 rounded border-outline-variant bg-transparent text-primary focus:ring-primary cursor-pointer shrink-0"
-                        />
-                        <img className="w-12 h-12 object-cover rounded-md border border-outline-variant/40 shrink-0" src={photo.src} alt={photo.alt} />
-                        <span className="font-label-md text-on-surface truncate font-bold">{photo.alt}</span>
+                  {activePhotos.map((photo) => {
+                    const imgSrc = photo.image.startsWith('/uploads') ? `http://localhost:5000${photo.image}` : photo.image;
+                    
+                    return (
+                      <div 
+                        key={photo._id} 
+                        className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/60 flex items-center justify-between gap-4 hover:border-primary transition-all"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <img className="w-12 h-12 object-cover rounded-md border border-outline-variant/40 shrink-0" src={imgSrc} alt={photo.title} />
+                          <span className="font-label-md text-on-surface truncate font-bold">{photo.title}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              setImageToPreview(photo);
+                              setIsPreviewModalOpen(true);
+                            }}
+                            className="px-2 py-1.5 hover:bg-surface-container rounded-lg text-on-surface-variant text-xs flex items-center"
+                            title="Preview"
+                          >
+                            <span className="material-symbols-outlined text-sm">visibility</span>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setImageToEdit(photo);
+                              setEditImageTitle(photo.title);
+                              setEditImageAlbumId(photo.albumId);
+                              setIsEditImageModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 hover:bg-surface-container rounded-lg text-primary text-xs font-bold"
+                          >
+                            Edit / Move
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteImage(photo)}
+                            className="p-1.5 hover:bg-error-container/30 text-error rounded-lg"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button 
-                          onClick={() => handleOpenEditPhoto(photo)}
-                          className="px-3 py-1.5 hover:bg-surface-container rounded-lg text-primary text-xs font-bold"
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          onClick={() => handleIndividualDelete(photo.id, photo.alt)}
-                          className="p-1.5 hover:bg-error-container/30 text-error rounded-lg"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {activePhotos.length === 0 && (
-                    <div className="py-16 text-center text-on-surface-variant font-light italic">
-                      No media available. Click upload above to add items.
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -512,110 +625,60 @@ const Gallery = () => {
 
       </div>
 
-      {/* Recent Activity Table / Gallery logs */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden text-left mt-8">
-        <div className="px-stack-md py-4 border-b border-outline-variant flex justify-between items-center">
-          <h3 className="font-headline-sm text-headline-sm font-bold">Gallery Audit Logs</h3>
-          <button 
-            onClick={() => triggerToast('Opening full systems history log tracker...')}
-            className="text-primary font-label-md text-label-md hover:underline font-bold text-sm"
-          >
-            View All History
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left font-body-sm text-body-sm">
-            <thead className="bg-surface border-b border-outline-variant/30 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Action Event</th>
-                <th className="px-6 py-4">Target Album</th>
-                <th className="px-6 py-4">Managed By</th>
-                <th className="px-6 py-4 text-right">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/20 text-on-surface-variant font-light">
-              {galleryLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-surface-container transition-all duration-200">
-                  <td className="px-6 py-4 flex items-center">
-                    <span className={`w-2.5 h-2.5 rounded-full mr-3 shrink-0 ${
-                      log.color === 'bg-error' ? 'bg-red-500' : log.color === 'bg-tertiary' ? 'bg-blue-600' : 'bg-green-500'
-                    }`}></span>
-                    <span className="font-medium text-on-surface">{log.action}</span>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-on-surface">{log.album}</td>
-                  <td className="px-6 py-4 font-semibold">{log.author}</td>
-                  <td className="px-6 py-4 text-right text-on-surface-variant font-bold text-xs uppercase">{log.time}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Floating Action Button */}
-      <button 
-        onClick={() => {
-          setUploadFormData({ title: '', albumTarget: selectedAlbum, sampleIndex: 'img-1' });
-          setIsUploadModalOpen(true);
-          document.body.style.overflow = 'hidden';
-        }}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-50 group border border-primary-fixed"
-        id="fab-upload"
-      >
-        <span className="material-symbols-outlined text-3xl">add</span>
-        <span className="absolute right-16 bg-surface-container-highest text-on-surface px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-md font-label-md text-label-md whitespace-nowrap pointer-events-none border border-outline-variant/20">
-          Quick Upload
-        </span>
-      </button>
-
       {/* Slide-Up Notification Toast */}
-      <div 
-        className={`fixed bottom-10 right-10 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] border border-outline-variant/20 ${
-          toast.visible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-        }`}
-      >
-        <span className="material-symbols-outlined text-green-400">check_circle</span>
-        <span className="font-label-md text-label-md font-semibold">{toast.message}</span>
-      </div>
+      {toast.visible && (
+        <div className="fixed bottom-10 right-10 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl z-[110] border border-outline-variant/20">
+          <span className="material-symbols-outlined text-green-400">check_circle</span>
+          <span className="font-label-md text-label-md font-semibold">{toast.message}</span>
+        </div>
+      )}
 
       {/* Modal: Create Album */}
-      {isAlbumModalOpen && (
+      {isCreateAlbumModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={handleCloseAlbumModal}></div>
-          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
-            <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Create New Media Album</h3>
-              <button 
-                className="p-1.5 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
-                onClick={() => { setIsAlbumModalOpen(false); document.body.style.overflow = 'auto'; }}
-              >
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsCreateAlbumModalOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant text-left">
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Create Category Album</h3>
+              <button className="p-1.5 hover:bg-surface-variant rounded-full flex items-center justify-center" onClick={() => setIsCreateAlbumModalOpen(false)}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleCreateAlbumSubmit} className="p-stack-md space-y-4">
+            <form onSubmit={handleCreateAlbumSubmit} className="p-6 space-y-4">
               <div>
                 <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Album Name</label>
                 <input 
                   value={newAlbumName}
                   onChange={(e) => setNewAlbumName(e.target.value)}
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                  placeholder="e.g. Summer Camp 2024"
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface" 
+                  placeholder="e.g. Annual Fest 2026"
                   type="text"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Cover Image (Optional)</label>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  ref={albumCoverInputRef}
+                  onChange={(e) => setNewAlbumCover(e.target.files[0])}
+                  className="w-full text-body-sm text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg p-2" 
                 />
               </div>
 
               <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
                 <button 
                   className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={() => { setIsAlbumModalOpen(false); document.body.style.overflow = 'auto'; }}
+                  onClick={() => setIsCreateAlbumModalOpen(false)}
                   type="button"
                 >
                   Cancel
                 </button>
                 <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100" 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 shadow-md active:scale-95 duration-100" 
                   type="submit"
                 >
                   Create Album
@@ -626,129 +689,51 @@ const Gallery = () => {
         </div>
       )}
 
-      {/* Modal: Upload Photo */}
-      {isUploadModalOpen && (
+      {/* Modal: Edit Album */}
+      {isEditAlbumModalOpen && albumToEdit && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => { setIsUploadModalOpen(false); document.body.style.overflow = 'auto'; }}></div>
-          <div className="relative w-full max-w-lg bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
-            <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Upload Campus Media Assets</h3>
-              <button 
-                className="p-1.5 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
-                onClick={() => { setIsUploadModalOpen(false); document.body.style.overflow = 'auto'; }}
-              >
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsEditAlbumModalOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant text-left">
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Edit Category Album</h3>
+              <button className="p-1.5 hover:bg-surface-variant rounded-full flex items-center justify-center" onClick={() => setIsEditAlbumModalOpen(false)}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleUploadPhotoSubmit} className="p-stack-md space-y-4">
+            <form onSubmit={handleUpdateAlbumSubmit} className="p-6 space-y-4">
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Media Caption / Title</label>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Rename Album</label>
                 <input 
-                  value={uploadFormData.title}
-                  onChange={(e) => setUploadFormData(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                  placeholder="e.g. Student Hackathon Project Presentation"
+                  value={editAlbumName}
+                  onChange={(e) => setEditAlbumName(e.target.value)}
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface" 
                   type="text"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Target Album Folder</label>
-                  <select 
-                    value={uploadFormData.albumTarget}
-                    onChange={(e) => setUploadFormData(prev => ({ ...prev, albumTarget: e.target.value }))}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest cursor-pointer font-bold text-body-sm"
-                  >
-                    {albums.map((alb) => (
-                      <option key={alb.id} value={alb.name}>{alb.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Media Sample Image</label>
-                  <select 
-                    value={uploadFormData.sampleIndex}
-                    onChange={(e) => setUploadFormData(prev => ({ ...prev, sampleIndex: e.target.value }))}
-                    className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest cursor-pointer font-bold text-body-sm"
-                  >
-                    <option value="img-1">Computer Workstations Lab</option>
-                    <option value="img-2">Candid Collaborative Coding</option>
-                    <option value="img-3">Hands mechanical coding focus</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="p-8 border-2 border-dashed border-outline-variant/60 rounded-xl flex flex-col items-center justify-center bg-surface-container-lowest/50 text-on-surface-variant text-center">
-                <span className="material-symbols-outlined text-4xl text-primary mb-2">cloud_upload</span>
-                <p className="text-xs font-bold">Standard drag-n-drop file indicators active.</p>
-                <p className="text-[10px] font-light mt-1">Mock upload simulator will inject selected sample image.</p>
-              </div>
-
-              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
-                <button 
-                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={() => { setIsUploadModalOpen(false); document.body.style.overflow = 'auto'; }}
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100" 
-                  type="submit"
-                >
-                  Record Media
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Edit Photo Caption */}
-      {isEditModalOpen && editingPhoto && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={handleCloseEditPhoto}></div>
-          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant text-left animate-scale-in">
-            <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Edit Asset Captions</h3>
-              <button 
-                className="p-1.5 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
-                onClick={handleCloseEditPhoto}
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            
-            <form onSubmit={handleUpdatePhotoSubmit} className="p-stack-md space-y-4">
-              <div className="text-center">
-                <img className="w-32 h-32 object-cover rounded-lg border border-outline-variant/60 mx-auto shadow" src={editingPhoto.src} alt={editingPhoto.alt} />
-              </div>
-
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Image Alt Caption</label>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Change Cover Image (Optional)</label>
                 <input 
-                  value={editingPhoto.alt}
-                  onChange={(e) => setEditingPhoto(prev => ({ ...prev, alt: e.target.value }))}
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest" 
-                  type="text"
-                  required
+                  type="file"
+                  accept="image/*"
+                  ref={editAlbumCoverInputRef}
+                  onChange={(e) => setEditAlbumCover(e.target.files[0])}
+                  className="w-full text-body-sm text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg p-2" 
                 />
               </div>
 
               <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
                 <button 
                   className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={handleCloseEditPhoto}
+                  onClick={() => setIsEditAlbumModalOpen(false)}
                   type="button"
                 >
                   Cancel
                 </button>
                 <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100" 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 shadow-md active:scale-95 duration-100" 
                   type="submit"
                 >
                   Save Changes
@@ -759,9 +744,219 @@ const Gallery = () => {
         </div>
       )}
 
+      {/* Modal: Delete Album Confirmation */}
+      {isDeleteAlbumConfirmOpen && albumToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsDeleteAlbumConfirmOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant text-left animate-scale-in">
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-error-container/20">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-error flex items-center gap-2">
+                <span className="material-symbols-outlined">warning</span> Delete Album Category
+              </h3>
+              <button className="p-1.5 hover:bg-surface-variant rounded-full flex items-center justify-center" onClick={() => setIsDeleteAlbumConfirmOpen(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <p className="text-body-md text-on-surface">
+                Are you sure you want to delete the album <strong>"{albumToDelete.name}"</strong>?
+              </p>
+              <div className="p-3.5 bg-error-container/10 border border-error/20 rounded-lg text-xs text-error font-medium">
+                <strong>Warning:</strong> Deleting this album will also permanently remove all linked photo assets inside it from the system and server storage.
+              </div>
+
+              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
+                <button 
+                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
+                  onClick={() => setIsDeleteAlbumConfirmOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-6 py-2 bg-error text-on-error rounded-lg font-label-md hover:bg-error/95 shadow-md active:scale-95 duration-100" 
+                  onClick={handleDeleteAlbumSubmit}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Upload Image */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => { if(!isUploading) setIsUploadModalOpen(false); }}></div>
+          <div className="relative w-full max-w-lg bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Upload Photo</h3>
+              <button className="p-1.5 hover:bg-surface-variant rounded-full flex items-center justify-center" onClick={() => { if(!isUploading) setIsUploadModalOpen(false); }}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUploadPhotoSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Photo Title / Caption</label>
+                <input 
+                  value={uploadFormData.title}
+                  onChange={(e) => setUploadFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface" 
+                  placeholder="e.g. Lab Programming Activity"
+                  type="text"
+                  required
+                  disabled={isUploading}
+                />
+              </div>
+
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Selected Album Target</label>
+                <div className="py-2 px-3 border border-outline-variant rounded-lg bg-surface-container-low font-bold text-xs">
+                  {selectedAlbum ? selectedAlbum.name : 'No Album Selected'}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Select File</label>
+                <input 
+                  type="file"
+                  accept="image/*"
+                  required
+                  ref={uploadFileInputRef}
+                  disabled={isUploading}
+                  onChange={(e) => setUploadFormData(prev => ({ ...prev, imageFile: e.target.files[0] }))}
+                  className="w-full text-body-sm text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg p-2" 
+                />
+                <p className="text-[10px] text-on-surface-variant mt-1">Supports JPG, PNG, WEBP, JPEG. Max size 5MB.</p>
+              </div>
+
+              {/* Progress bar */}
+              {isUploading && (
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <span className="text-primary flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px] animate-spin">sync</span> Uploading...
+                    </span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                    <div className="bg-primary h-full transition-all duration-150" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
+                <button 
+                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
+                  onClick={() => setIsUploadModalOpen(false)}
+                  type="button"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100 flex items-center gap-1.5" 
+                  type="submit"
+                  disabled={isUploading}
+                >
+                  <span className="material-symbols-outlined text-sm">cloud_upload</span> Upload
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Image Title / Move Album */}
+      {isEditImageModalOpen && imageToEdit && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsEditImageModalOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant text-left animate-scale-in">
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Edit Photo Settings</h3>
+              <button className="p-1.5 hover:bg-surface-variant rounded-full flex items-center justify-center" onClick={() => setIsEditImageModalOpen(false)}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateImageSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Image Title</label>
+                <input 
+                  value={editImageTitle}
+                  onChange={(e) => setEditImageTitle(e.target.value)}
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface" 
+                  type="text"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Move to Album</label>
+                <select 
+                  value={editImageAlbumId}
+                  onChange={(e) => setEditImageAlbumId(e.target.value)}
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface cursor-pointer font-bold text-body-sm"
+                >
+                  {albums.map((alb) => (
+                    <option key={alb._id} value={alb._id}>{alb.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
+                <button 
+                  className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
+                  onClick={() => setIsEditImageModalOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 shadow-md active:scale-95 duration-100" 
+                  type="submit"
+                >
+                  Save Details
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Preview Modal */}
+      {isPreviewModalOpen && imageToPreview && (
+        <div 
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[120] flex flex-col items-center justify-center p-4"
+          onClick={() => setIsPreviewModalOpen(false)}
+        >
+          <button 
+            className="absolute top-6 right-6 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 flex items-center justify-center border border-white/20 transition-colors z-10"
+            onClick={() => setIsPreviewModalOpen(false)}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+          
+          <div className="max-w-4xl max-h-[80vh] overflow-hidden flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={imageToPreview.image.startsWith('/uploads') ? `http://localhost:5000${imageToPreview.image}` : imageToPreview.image} 
+              alt={imageToPreview.title} 
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+          
+          <div className="mt-4 text-center text-white" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-headline-sm text-headline-sm font-semibold">{imageToPreview.title}</h3>
+            <p className="text-xs text-white/60 mt-1 uppercase tracking-widest font-bold">Album: {selectedAlbum ? selectedAlbum.name : ''}</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
 
 export default Gallery;
-

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../../services/api';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
-  const [passwords, setPasswords] = useState({
+  const [formData, setFormData] = useState({
+    email: '',
+    code: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -14,19 +17,19 @@ const ResetPassword = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPasswords((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value
     }));
     if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const { newPassword, confirmPassword } = passwords;
+    const { email, code, newPassword, confirmPassword } = formData;
 
-    if (!newPassword || !confirmPassword) {
-      setError('Please fill in all password fields.');
+    if (!email || !code || !newPassword || !confirmPassword) {
+      setError('Please fill in all fields.');
       return;
     }
 
@@ -43,10 +46,14 @@ const ResetPassword = () => {
     setIsSubmitting(true);
     setError('');
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await api.post('/auth/reset-password', { email, password: newPassword, code });
       setIsSuccess(true);
-    }, 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error resetting password.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -76,6 +83,34 @@ const ResetPassword = () => {
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider" htmlFor="email">Email Address</label>
+                <input
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant/60 rounded-xl font-body-md text-on-surface form-focus-ring transition-all"
+                  id="email"
+                  name="email"
+                  placeholder="name@laxmi.com"
+                  required
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider" htmlFor="code">Reset Verification Code</label>
+                <input
+                  className="w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant/60 rounded-xl font-body-md text-on-surface form-focus-ring transition-all"
+                  id="code"
+                  name="code"
+                  placeholder="e.g. 123456"
+                  required
+                  type="text"
+                  value={formData.code}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider" htmlFor="newPassword">New Password</label>
                 <div className="relative">
                   <input
@@ -85,7 +120,7 @@ const ResetPassword = () => {
                     placeholder="••••••••"
                     required
                     type={showPasswords ? 'text' : 'password'}
-                    value={passwords.newPassword}
+                    value={formData.newPassword}
                     onChange={handleChange}
                   />
                   <button
@@ -110,7 +145,7 @@ const ResetPassword = () => {
                     placeholder="••••••••"
                     required
                     type={showPasswords ? 'text' : 'password'}
-                    value={passwords.confirmPassword}
+                    value={formData.confirmPassword}
                     onChange={handleChange}
                   />
                 </div>

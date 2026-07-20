@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSettings, updateSettings, resetSettings } from '../../services/homepageService';
 
 const Settings = () => {
   // 1. Academy Identity State parameters
@@ -8,7 +9,7 @@ const Settings = () => {
   const [academyPhone, setAcademyPhone] = useState('+1 (555) 123-4567');
   const [academyWebsite, setAcademyWebsite] = useState('www.eduacademy.com');
 
-  // 2. Toggles state for Preferences bento card
+  // 2. Toggles state for Preferences
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
   const [autoBackups, setAutoBackups] = useState(true);
   const [publicAccess, setPublicAccess] = useState(true);
@@ -49,8 +50,39 @@ const Settings = () => {
   // Interaction Feedbacks
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const availablePermissions = ['ATTENDANCE', 'GRADES', 'ADMISSIONS', 'RECORDS', 'FINANCE', 'FULL ACCESS'];
+
+  const fetchSettingsData = async () => {
+    try {
+      setLoading(true);
+      const data = await getSettings();
+      setAcademyName(data.academyName);
+      setAcademyEmail(data.academyEmail);
+      setAcademyAddress(data.academyAddress);
+      setAcademyPhone(data.academyPhone);
+      setAcademyWebsite(data.academyWebsite);
+      setDarkMode(data.darkMode);
+      setAutoBackups(data.autoBackups);
+      setPublicAccess(data.publicAccess);
+      
+      if (data.darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to load settings configuration from MongoDB.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettingsData();
+  }, []);
 
   const triggerToast = (message, type = 'success') => {
     setToast({ visible: true, message, type });
@@ -59,28 +91,44 @@ const Settings = () => {
     }, 3000);
   };
 
-  // Preference click handlers
-  const handleToggleTheme = () => {
+  const handleToggleTheme = async () => {
     const nextDark = !darkMode;
     setDarkMode(nextDark);
-    if (nextDark) {
-      document.documentElement.classList.add('dark');
-      triggerToast('System dark theme enabled.', 'info');
-    } else {
-      document.documentElement.classList.remove('dark');
-      triggerToast('System light theme enabled.', 'info');
+    try {
+      await updateSettings({ darkMode: nextDark });
+      if (nextDark) {
+        document.documentElement.classList.add('dark');
+        triggerToast('System dark theme enabled in MongoDB.', 'info');
+      } else {
+        document.documentElement.classList.remove('dark');
+        triggerToast('System light theme enabled in MongoDB.', 'info');
+      }
+    } catch (err) {
+      triggerToast('Failed to toggle theme status.', 'error');
     }
   };
 
-  const handleIdentitySave = (e) => {
+  const handleIdentitySave = async (e) => {
     e.preventDefault();
-    triggerToast('Academy Identity settings saved successfully!', 'success');
+    try {
+      await updateSettings({
+        academyName,
+        academyEmail,
+        academyAddress,
+        academyPhone,
+        academyWebsite,
+        autoBackups,
+        publicAccess
+      });
+      triggerToast('Academy Identity settings saved successfully in MongoDB!', 'success');
+    } catch (err) {
+      triggerToast('Failed to save settings parameters.', 'error');
+    }
   };
 
-  // Cloud backup & data export triggers
   const handleCloudSync = () => {
     setIsSyncing(true);
-    triggerToast('Synchronizing local database schemas with AWS cloud vaults...', 'info');
+    triggerToast('Synchronizing local database schemas...', 'info');
     setTimeout(() => {
       setIsSyncing(false);
       triggerToast('Database vault sync completed successfully. All systems green.', 'success');
@@ -91,28 +139,32 @@ const Settings = () => {
     triggerToast('Compiling secure schema spreadsheets... System download initialized.', 'success');
   };
 
-  // Danger zone alerts
   const handlePurgeCache = () => {
     if (window.confirm('Are you sure you want to purge the system cache? This will temporarily reload dashboard parameters.')) {
       triggerToast('System cached parameters flushed. Interface loading speeds refreshed.', 'success');
     }
   };
 
-  const handleFactoryReset = () => {
+  const handleFactoryReset = async () => {
     if (window.confirm('CAUTION: You are about to initiate a factory reset. All custom permissions, identity overrides, and local parameters will be erased. Proceed?')) {
-      // Revert states to template defaults
-      setAcademyName('EduAcademy Excellence');
-      setAcademyEmail('contact@eduacademy.com');
-      setAcademyAddress('742 Evergreen Terrace, Tech Valley, CA 90210');
-      setAcademyPhone('+1 (555) 123-4567');
-      setAcademyWebsite('www.eduacademy.com');
-      setAutoBackups(true);
-      setPublicAccess(true);
-      triggerToast('Academy profile parameters successfully reset to system default standards.', 'error');
+      try {
+        const data = await resetSettings();
+        setAcademyName(data.academyName);
+        setAcademyEmail(data.academyEmail);
+        setAcademyAddress(data.academyAddress);
+        setAcademyPhone(data.academyPhone);
+        setAcademyWebsite(data.academyWebsite);
+        setDarkMode(data.darkMode);
+        setAutoBackups(data.autoBackups);
+        setPublicAccess(data.publicAccess);
+        document.documentElement.classList.remove('dark');
+        triggerToast('Academy parameters successfully reset to default standards in MongoDB.', 'error');
+      } catch (err) {
+        triggerToast('Failed to reset configuration.', 'error');
+      }
     }
   };
 
-  // User Role Creator operations
   const handleTogglePermission = (permission) => {
     setSelectedPermissions(prev => 
       prev.includes(permission) 
@@ -128,14 +180,14 @@ const Settings = () => {
       return;
     }
     if (selectedPermissions.length === 0) {
-      triggerToast('Please select at least one permission badge for this staff role.', 'error');
+      triggerToast('Please select at least one permission badge.', 'error');
       return;
     }
 
     const createdRole = {
       id: `role-${Date.now()}`,
       name: newRoleName.trim(),
-      usersCount: 0, // Starts with 0 members
+      usersCount: 0,
       permissions: selectedPermissions,
       icon: 'person',
       iconStyle: 'bg-secondary-container/30 text-secondary'
@@ -145,437 +197,307 @@ const Settings = () => {
     setIsRoleModalOpen(false);
     document.body.style.overflow = 'auto';
 
-    triggerToast(`Role "${newRoleName}" created successfully! Add users from the Team panel.`, 'success');
-
-    // Reset role creator states
+    triggerToast(`Role "${newRoleName}" created successfully!`, 'success');
     setNewRoleName('');
     setSelectedPermissions([]);
   };
 
-  const handleDeleteRole = (role) => {
-    if (role.name === 'Super Admin') {
-      triggerToast('Access Denied: The system root Role "Super Admin" cannot be deleted.', 'error');
-      return;
-    }
-    if (window.confirm(`Are you sure you want to delete the administrative role "${role.name}"?`)) {
-      setRolesList(prev => prev.filter(r => r.id !== role.id));
-      triggerToast(`Administrative role "${role.name}" deleted.`, 'info');
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <span className="material-symbols-outlined animate-spin text-primary text-5xl">sync</span>
+        <p className="text-on-surface-variant font-label-md">Loading configuration profile...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-stack-lg text-left relative">
+    <div className="space-y-stack-lg text-left font-sans">
       
       {/* Page Header */}
-      <div className="mb-stack-lg text-left">
-        <h2 className="font-headline-lg text-headline-lg text-on-surface">System Settings</h2>
-        <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-          Configure your academy's core identity, user permissions, and system preferences.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-stack-lg gap-4">
+        <div>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Global Settings</h2>
+          <p className="text-body-md text-on-surface-variant mt-1">Configure academy parameters, staff credentials, and sync local datastores.</p>
+        </div>
+        <button 
+          onClick={handleCloudSync}
+          disabled={isSyncing}
+          className="flex items-center gap-2 px-6 py-2.5 bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-md hover:scale-102 active:scale-95 transition-transform duration-100 disabled:opacity-50 shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">sync</span>
+          <span>{isSyncing ? 'Synchronizing...' : 'Sync MongoDB'}</span>
+        </button>
       </div>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-12 gap-gutter items-start">
+      {/* Grid Configuration */}
+      <div className="grid grid-cols-12 gap-gutter">
         
-        {/* Academy Identity panel (Span 8) */}
-        <section className="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-stack-lg shadow-sm text-left settings-card">
-          <form onSubmit={handleIdentitySave}>
-            <div className="flex items-center justify-between mb-stack-md gap-2 flex-wrap">
-              <div className="flex items-center">
-                <span className="material-symbols-outlined text-primary mr-3 p-2 bg-primary-container/20 rounded-lg">business</span>
-                <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Academy Identity</h3>
+        {/* Left Column: Academy Profile Config */}
+        <div className="col-span-12 lg:col-span-8 space-y-gutter">
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-6 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">domain</span>
+              Academy Profile Configurations
+            </h3>
+            
+            <form onSubmit={handleIdentitySave} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1.5 font-bold tracking-wider">Academy Name</label>
+                  <input 
+                    type="text" 
+                    value={academyName}
+                    onChange={(e) => setAcademyName(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1.5 font-bold tracking-wider">Official Email</label>
+                  <input 
+                    type="email" 
+                    value={academyEmail}
+                    onChange={(e) => setAcademyEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
+                  />
+                </div>
               </div>
-              <button 
-                type="submit"
-                className="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-label-md text-label-md hover:scale-102 transition-transform shadow-sm font-semibold active:scale-95 duration-100"
-              >
-                Save Changes
-              </button>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-stack-md">
-              <div className="space-y-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Academy Name</label>
-                <input 
-                  type="text" 
-                  value={academyName}
-                  onChange={(e) => setAcademyName(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Academic Email</label>
-                <input 
-                  type="email" 
-                  value={academyEmail}
-                  onChange={(e) => setAcademyEmail(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                />
-              </div>
-              <div className="space-y-1 md:col-span-2">
-                <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Official Address</label>
+              <div>
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1.5 font-bold tracking-wider">Academy Address</label>
                 <input 
                   type="text" 
                   value={academyAddress}
                   onChange={(e) => setAcademyAddress(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
+                  required
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Phone Number</label>
-                <input 
-                  type="text" 
-                  value={academyPhone}
-                  onChange={(e) => setAcademyPhone(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant font-bold uppercase tracking-wider">Website URL</label>
-                <input 
-                  type="text" 
-                  value={academyWebsite}
-                  onChange={(e) => setAcademyWebsite(e.target.value)}
-                  className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2.5 font-body-md text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none" 
-                />
-              </div>
-            </div>
-          </form>
-        </section>
 
-        {/* Preferences Panel (Span 4) */}
-        <section className="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-stack-lg shadow-sm text-left settings-card">
-          <div className="flex items-center mb-stack-md border-b border-outline-variant/20 pb-2">
-            <span className="material-symbols-outlined text-tertiary mr-3 p-2 bg-tertiary-container/20 rounded-lg">tune</span>
-            <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Preferences</h3>
-          </div>
-
-          <div className="space-y-stack-md">
-            {/* Dark Mode toggle switch */}
-            <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
-              <div className="flex flex-col min-w-0">
-                <span className="font-label-md text-label-md text-on-surface font-bold leading-none">System Theme</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant mt-1.5 font-light">Switch to Dark Mode</span>
-              </div>
-              <button 
-                type="button"
-                onClick={handleToggleTheme}
-                className={`w-12 h-6 rounded-full relative transition-all duration-200 cursor-pointer outline-none border-none ${
-                  darkMode ? 'bg-primary' : 'bg-outline-variant'
-                }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                  darkMode ? 'right-1' : 'left-1'
-                }`}></div>
-              </button>
-            </div>
-
-            {/* Backups switch */}
-            <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
-              <div className="flex flex-col min-w-0">
-                <span className="font-label-md text-label-md text-on-surface font-bold leading-none">Auto Backups</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant mt-1.5 font-light">Daily at 2:00 AM</span>
-              </div>
-              <button 
-                type="button"
-                onClick={() => {
-                  setAutoBackups(prev => !prev);
-                  triggerToast(autoBackups ? 'Automated daily schema back-ups paused.' : 'Automated daily cloud schema backups enabled.', 'info');
-                }}
-                className={`w-12 h-6 rounded-full relative transition-all duration-200 cursor-pointer outline-none border-none ${
-                  autoBackups ? 'bg-primary' : 'bg-outline-variant'
-                }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                  autoBackups ? 'right-1' : 'left-1'
-                }`}></div>
-              </button>
-            </div>
-
-            {/* Student portal access */}
-            <div className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
-              <div className="flex flex-col min-w-0">
-                <span className="font-label-md text-label-md text-on-surface font-bold leading-none">Student Portal</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant mt-1.5 font-light">Public Access</span>
-              </div>
-              <button 
-                type="button"
-                onClick={() => {
-                  setPublicAccess(prev => !prev);
-                  triggerToast(publicAccess ? 'Student portal closed for public access.' : 'Student portal opened for public enrollment requests.', 'info');
-                }}
-                className={`w-12 h-6 rounded-full relative transition-all duration-200 cursor-pointer outline-none border-none ${
-                  publicAccess ? 'bg-primary' : 'bg-outline-variant'
-                }`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                  publicAccess ? 'right-1' : 'left-1'
-                }`}></div>
-              </button>
-            </div>
-          </div>
-
-          <button 
-            type="button"
-            onClick={() => triggerToast('Opening system configurations details panel...', 'info')}
-            className="w-full mt-stack-md border border-outline text-on-surface-variant py-2.5 rounded-lg font-bold text-xs hover:bg-surface-container transition-colors uppercase tracking-wider"
-          >
-            Manage All Settings
-          </button>
-        </section>
-
-        {/* User Role Management (Span 12) */}
-        <section className="col-span-12 bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-stack-lg shadow-sm text-left settings-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-stack-md border-b border-outline-variant/20 pb-4">
-            <div className="flex items-center">
-              <span className="material-symbols-outlined text-secondary mr-3 p-2 bg-secondary-container/30 rounded-lg">security</span>
-              <div>
-                <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">User Role Management</h3>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">Control access levels and credentials for staff and faculty members.</p>
-              </div>
-            </div>
-            <button 
-              type="button"
-              onClick={() => {
-                setIsRoleModalOpen(true);
-                document.body.style.overflow = 'hidden';
-              }}
-              className="bg-secondary text-white px-6 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-on-secondary-container transition-colors active:scale-95 duration-100 uppercase tracking-wider shadow-sm self-start md:self-center"
-            >
-              <span className="material-symbols-outlined text-sm font-bold">add</span>
-              <span>Create New Role</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto hide-scrollbar">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="border-b border-outline-variant/50 text-xs font-bold text-on-surface-variant uppercase tracking-wider bg-surface-container-low/30">
-                  <th className="py-4 px-4">Role Name</th>
-                  <th className="py-4 px-4">Users Associated</th>
-                  <th className="py-4 px-4">Permission Badges</th>
-                  <th className="py-4 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="font-body-sm font-light text-on-surface">
-                {rolesList.map((role) => (
-                  <tr key={role.id} className="border-b border-outline-variant/30 hover:bg-surface-container-low/40 transition-colors">
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className={`w-8 h-8 rounded flex items-center justify-center mr-3 border border-outline-variant/10 ${role.iconStyle}`}>
-                          <span className="material-symbols-outlined text-base">{role.icon || 'person'}</span>
-                        </div>
-                        <span className="font-bold text-on-surface">{role.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 font-semibold text-xs whitespace-nowrap">
-                      {role.usersCount} {role.usersCount === 1 ? 'User' : 'Users'}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex gap-1.5 flex-wrap">
-                        {role.permissions.map((perm) => (
-                          <span 
-                            key={perm}
-                            className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border ${
-                              perm === 'FULL ACCESS'
-                                ? 'bg-primary-container text-on-primary-container border-primary-container'
-                                : perm === 'FINANCE'
-                                ? 'bg-tertiary-container text-on-tertiary-container border-tertiary-container'
-                                : 'bg-surface-container text-on-surface-variant border-outline-variant/35'
-                            }`}
-                          >
-                            {perm}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center whitespace-nowrap">
-                      <div className="flex justify-center items-center gap-1">
-                        <button 
-                          onClick={() => triggerToast(`Opening configuration adjustments editor for "${role.name}"...`, 'info')}
-                          className="p-1 text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center rounded hover:bg-surface-container"
-                          title="Edit Permissions"
-                        >
-                          <span className="material-symbols-outlined text-base">edit</span>
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteRole(role)}
-                          className="p-1 text-on-surface-variant hover:text-error transition-colors flex items-center justify-center rounded hover:bg-surface-container"
-                          title="Delete Role"
-                        >
-                          <span className="material-symbols-outlined text-base">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Database Sync Controls (Span 7) */}
-        <section className="col-span-12 lg:col-span-7 bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-stack-lg shadow-sm text-left settings-card">
-          <div className="flex items-center mb-stack-md border-b border-outline-variant/20 pb-2">
-            <span className="material-symbols-outlined text-error mr-3 p-2 bg-error-container/20 rounded-lg">backup</span>
-            <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Data &amp; Backup</h3>
-          </div>
-
-          <div className="flex flex-col space-y-4">
-            <div className="p-4 bg-surface-container-low rounded-lg flex items-center justify-between border border-outline-variant/30 gap-4 flex-wrap">
-              <div className="flex items-center min-w-0">
-                <span className={`material-symbols-outlined text-primary-container text-3xl mr-4 shrink-0 ${
-                  isSyncing ? 'animate-spin' : ''
-                }`}>cloud_done</span>
-                <div className="min-w-0">
-                  <p className="font-label-md text-label-md font-bold text-on-surface">Cloud Database Backup</p>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 font-light">Last successful backup sync: Today, 2:04 AM</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1.5 font-bold tracking-wider">Phone / Hotline</label>
+                  <input 
+                    type="text" 
+                    value={academyPhone}
+                    onChange={(e) => setAcademyPhone(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase mb-1.5 font-bold tracking-wider">Domain Website</label>
+                  <input 
+                    type="text" 
+                    value={academyWebsite}
+                    onChange={(e) => setAcademyWebsite(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-light text-on-surface focus:outline-none"
+                  />
                 </div>
               </div>
-              <button 
-                onClick={handleCloudSync}
-                disabled={isSyncing}
-                className="text-primary font-bold text-xs hover:underline shrink-0"
-              >
-                {isSyncing ? 'Syncing...' : 'Sync Now'}
-              </button>
-            </div>
 
-            <div className="p-4 border border-outline-variant/40 rounded-lg flex items-center justify-between gap-4 flex-wrap">
-              <div className="min-w-0">
-                <p className="font-label-md text-label-md font-bold text-on-surface">Manual Export Settings</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 font-light">Download institutional records as raw CSV/XLSX logs.</p>
+              <div className="pt-4 border-t border-outline-variant/30 flex justify-end">
+                <button 
+                  type="submit"
+                  className="px-6 py-2.5 bg-primary text-on-primary rounded-lg font-label-md text-label-md shadow-md active:scale-95 duration-100 hover:scale-[1.01]"
+                >
+                  Save Profile Configuration
+                </button>
               </div>
-              <button 
-                onClick={handleExportData}
-                className="bg-primary-container text-on-primary-container hover:bg-primary-container/80 transition-colors px-4 py-2.5 rounded-lg font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-sm"
-              >
-                <span className="material-symbols-outlined text-sm font-bold">download</span>
-                <span>Export Data</span>
-              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* Right Column: Preferences & Danger Zone */}
+        <div className="col-span-12 lg:col-span-4 space-y-gutter">
+          
+          {/* Preferences Card */}
+          <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm space-y-6">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary">tune</span>
+              System Preferences
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-label-md text-on-surface font-bold">Dark Interface Mode</p>
+                  <p className="text-[10px] text-on-surface-variant">Toggles system HSL parameters.</p>
+                </div>
+                <button 
+                  onClick={handleToggleTheme}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${darkMode ? 'bg-primary' : 'bg-surface-container-high'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-label-md text-on-surface font-bold">Backup Automatically</p>
+                  <p className="text-[10px] text-on-surface-variant">Sync DB backups weekly.</p>
+                </div>
+                <button 
+                  onClick={() => setAutoBackups(!autoBackups)}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${autoBackups ? 'bg-primary' : 'bg-surface-container-high'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${autoBackups ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
             </div>
           </div>
-        </section>
 
-        {/* Danger Zone (Span 5) */}
-        <section className="col-span-12 lg:col-span-5 bg-error-container/10 border border-error/20 rounded-xl p-stack-lg shadow-sm text-left settings-card">
-          <div className="flex items-center mb-stack-md border-b border-error/20 pb-2">
-            <span className="material-symbols-outlined text-error mr-3 p-2 bg-error-container/30 rounded-lg">warning</span>
-            <h3 className="font-headline-sm text-headline-sm font-bold text-error">Danger Zone</h3>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap border-b border-error/10 pb-3">
-              <div className="min-w-0">
-                <p className="font-label-md text-label-md font-bold text-on-surface">Clear System Cache</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 font-light">May improve portal execution speeds.</p>
-              </div>
+          {/* Danger Zone Card */}
+          <div className="bg-surface-container-lowest p-6 rounded-xl border border-error/20 shadow-sm space-y-4 border-t-4 border-t-error">
+            <h3 className="font-headline-sm text-headline-sm text-error font-semibold flex items-center gap-2">
+              <span className="material-symbols-outlined">warning</span>
+              System Danger Zone
+            </h3>
+            <p className="text-body-sm text-on-surface-variant font-light">Critical system maintenance override protocols.</p>
+            
+            <div className="space-y-2 pt-2">
               <button 
                 onClick={handlePurgeCache}
-                className="text-error font-bold text-xs hover:bg-error-container/30 px-3.5 py-1.5 rounded border border-error/20 transition-all shrink-0"
+                className="w-full py-2.5 border border-outline hover:bg-surface-container text-on-surface font-label-md text-label-md font-bold rounded-lg transition-colors text-center block"
               >
-                Purge
+                Flush System Cache
               </button>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="min-w-0">
-                <p className="font-label-md text-label-md font-bold text-on-surface">Factory Parameter Reset</p>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 font-light">Erase all custom portal settings configurations.</p>
-              </div>
               <button 
                 onClick={handleFactoryReset}
-                className="bg-error hover:bg-error/90 text-white font-bold text-xs px-3.5 py-1.5 rounded transition-all shrink-0 shadow-sm"
+                className="w-full py-2.5 bg-error text-on-error hover:bg-opacity-90 font-label-md text-label-md font-bold rounded-lg transition-all text-center block"
               >
-                Reset Parameters
+                Perform Factory Reset
               </button>
             </div>
           </div>
-        </section>
+
+        </div>
 
       </div>
 
-      {/* Floating Success Toaster */}
-      <div 
-        className={`fixed bottom-10 right-10 bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl transition-all duration-300 z-[110] border border-outline-variant/20 ${
-          toast.visible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
-        }`}
-      >
-        <span className="material-symbols-outlined text-green-400">check_circle</span>
-        <span className="font-label-md text-label-md font-semibold">{toast.message}</span>
+      {/* Role ledger & overlay modals */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden text-left mt-8">
+        <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+          <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold">Administrative Permission Ledger</h3>
+          <button 
+            onClick={() => setIsRoleModalOpen(true)}
+            className="flex items-center gap-1.5 px-4 py-2 border border-primary text-primary font-label-md text-label-md rounded-lg hover:bg-primary-container/10 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Create Custom Role
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left font-body-sm text-body-sm">
+            <thead className="bg-surface border-b border-outline-variant/30 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Security Role</th>
+                <th className="px-6 py-4">Assigned Staff</th>
+                <th className="px-6 py-4">Configured Permissions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/20 text-on-surface-variant font-light">
+              {rolesList.map((role) => (
+                <tr key={role.id} className="hover:bg-surface-container transition-all">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg ${role.iconStyle || 'bg-surface-variant text-on-surface-variant'} flex items-center justify-center`}>
+                        <span className="material-symbols-outlined text-[18px]">{role.icon}</span>
+                      </div>
+                      <span className="font-bold text-on-surface">{role.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-on-surface">{role.usersCount} Members</td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {role.permissions.map(perm => (
+                        <span key={perm} className="bg-surface-container text-on-surface-variant text-[9px] px-2 py-0.5 rounded font-bold uppercase">{perm}</span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Modal: Create New Administrative Role */}
+      {/* Role creator modal */}
       {isRoleModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => { setIsRoleModalOpen(false); document.body.style.overflow = 'auto'; }}></div>
+          <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsRoleModalOpen(false)}></div>
           <div className="relative w-full max-w-md bg-surface rounded-xl shadow-2xl overflow-hidden border border-outline-variant animate-scale-in text-left">
-            
-            <div className="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Create Portal Access Role</h3>
+            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+              <h3 className="font-headline-sm text-headline-sm font-bold text-on-surface">Create Custom Admin Role</h3>
               <button 
                 className="p-1.5 hover:bg-surface-variant rounded-full transition-colors flex items-center justify-center" 
-                onClick={() => { setIsRoleModalOpen(false); document.body.style.overflow = 'auto'; }}
+                onClick={() => setIsRoleModalOpen(false)}
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleRoleSubmit} className="p-stack-md space-y-4">
+            <form onSubmit={handleRoleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Role Name</label>
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-1.5 block uppercase tracking-wider font-bold">Role Label</label>
                 <input 
-                  type="text" 
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  placeholder="e.g. Course Coordinator"
-                  className="w-full border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest font-medium text-body-sm"
+                  className="w-full border border-outline-variant rounded-lg focus:border-primary focus:ring-primary py-2.5 px-3 bg-surface-container-lowest text-on-surface" 
+                  placeholder="e.g. Finance Moderator"
+                  type="text"
+                  required
                 />
               </div>
 
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant mb-2.5 block uppercase tracking-wider font-bold">Select Permission Badges</label>
-                <div className="grid grid-cols-2 gap-2 bg-surface-container-low p-3 rounded-lg border border-outline-variant/35">
-                  {availablePermissions.map((perm) => {
-                    const isChecked = selectedPermissions.includes(perm);
-                    return (
-                      <div 
-                        key={perm}
-                        onClick={() => handleTogglePermission(perm)}
-                        className={`flex items-center gap-2 px-2.5 py-2 rounded border cursor-pointer select-none transition-all ${
-                          isChecked 
-                            ? 'bg-primary/10 text-primary border-primary font-bold' 
-                            : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/30'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {isChecked ? 'check_box' : 'check_box_outline_blank'}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-wider">{perm}</span>
-                      </div>
-                    );
-                  })}
+                <label className="font-label-sm text-label-sm text-on-surface-variant mb-3 block uppercase tracking-wider font-bold">Grant Permissions</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {availablePermissions.map(perm => (
+                    <button
+                      type="button"
+                      key={perm}
+                      onClick={() => handleTogglePermission(perm)}
+                      className={`p-2.5 border rounded-lg text-left text-xs font-bold transition-all ${
+                        selectedPermissions.includes(perm)
+                          ? 'border-primary bg-primary-container/20 text-primary'
+                          : 'border-outline-variant text-on-surface-variant bg-transparent'
+                      }`}
+                    >
+                      {perm}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end space-x-3 border-t border-outline-variant/30 mt-6">
                 <button 
                   className="px-6 py-2 border border-outline-variant rounded-lg font-label-md text-on-surface-variant hover:bg-surface-container transition-colors" 
-                  onClick={() => { setIsRoleModalOpen(false); document.body.style.overflow = 'auto'; }}
+                  onClick={() => setIsRoleModalOpen(false)}
                   type="button"
                 >
                   Cancel
                 </button>
                 <button 
-                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100 font-bold" 
+                  className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary/95 transition-shadow shadow-md active:scale-95 duration-100" 
                   type="submit"
                 >
-                  Create Role
+                  Publish Role
                 </button>
               </div>
             </form>
-
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification popups */}
+      {toast.visible && (
+        <div className="fixed bottom-6 right-6 z-[110] bg-inverse-surface text-inverse-on-surface px-6 py-3 rounded-lg shadow-lg font-label-md flex items-center space-x-3 border border-outline-variant/30 animate-slide-up">
+          <span className="material-symbols-outlined text-success">check_circle</span>
+          <span>{toast.message}</span>
         </div>
       )}
 

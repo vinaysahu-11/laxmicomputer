@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { loginUser } from '../../redux/slices/authSlice';
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,37 +32,39 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const { email, password } = formData;
+
+    if (!email || !password) {
+      setError('Please fill in all fields.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
-    // Simulated login verification based on credentials
-    setTimeout(() => {
-      const { email, password, role } = formData;
-
-      if (!email || !password) {
-        setError('Please fill in all fields.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Check credentials and navigate to respective dashboards
-      if (email === 'admin@laxmi.com' && password === 'admin123') {
-        navigate('/admin');
-      } else if (email === 'teacher@laxmi.com' && password === 'teacher123') {
-        navigate('/teacher');
-      } else if (email === 'student@laxmi.com' && password === 'student123') {
-        navigate('/student');
+    try {
+      const resultAction = await dispatch(loginUser({ email, password }));
+      if (loginUser.fulfilled.match(resultAction)) {
+        const user = resultAction.payload;
+        if (user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (user.role === 'teacher') {
+          navigate('/teacher/dashboard');
+        } else if (user.role === 'student') {
+          navigate('/student/dashboard');
+        } else {
+          navigate('/');
+        }
       } else {
-        // Dynamic fallback fallback if they entered custom credentials
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'teacher') navigate('/teacher');
-        else navigate('/student');
+        setError(resultAction.payload || 'Login failed. Please check credentials.');
       }
-
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
       setIsSubmitting(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -116,14 +121,14 @@ const Login = () => {
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider" htmlFor="email">Email / User ID</label>
+                <label className="font-label-sm text-label-sm text-on-surface-variant block uppercase tracking-wider" htmlFor="email">Email or User ID</label>
                 <input
                   className="w-full px-4 py-3 bg-surface border border-outline-variant/60 rounded-xl font-body-md text-on-surface form-focus-ring transition-all"
                   id="email"
                   name="email"
-                  placeholder="name@laxmi.com"
+                  placeholder="name@laxmi.com or STU-2026-001"
                   required
-                  type="email"
+                  type="text"
                   value={formData.email}
                   onChange={handleChange}
                 />

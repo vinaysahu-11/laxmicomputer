@@ -1,7 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import resultService from '../../services/resultService';
 
 const Results = () => {
   const [hoveredStoryIndex, setHoveredStoryIndex] = useState(null);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchResults = async () => {
+    try {
+      setLoading(true);
+      const data = await resultService.getResults();
+      // Sort results by percentage descending to find academic toppers
+      const sortedResults = (data || []).sort((a, b) => b.percentage - a.percentage);
+      setResults(sortedResults);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load student results.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  const getInitials = (name) => {
+    if (!name) return 'ST';
+    const parts = name.split(' ');
+    return parts.map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2) || 'ST';
+  };
+
+  const mainTopper = results.length > 0 ? results[0] : null;
+  const secondaryToppers = results.length > 1 ? results.slice(1) : [];
 
   const storiesData = [
     {
@@ -36,70 +69,82 @@ const Results = () => {
       </header>
 
       {/* Student Achievements: Toppers (Bento Style) */}
-      <section>
-        <div className="flex items-end justify-between mb-stack-lg">
-          <div className="space-y-2">
-            <h2 className="font-headline-lg text-headline-lg text-on-surface">Student Achievements</h2>
-            <div className="h-1 w-24 bg-primary-container rounded-full"></div>
-          </div>
+      {loading ? (
+        <div className="py-24 text-center">
+          <span className="material-symbols-outlined animate-spin text-4xl text-primary mb-3">sync</span>
+          <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Syncing academic toppers...</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-          {/* Main Topper Card */}
-          <div className="md:col-span-6 lg:col-span-4 group relative overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm hover:shadow-lg transition-all duration-300">
-            <img 
-              className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-500" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjD_Ggbz0mBTXN0xORRdC12DmV3to_Wh2DOTdgRxey6t2HDQeg-8nExbyDhu1vNLotgpXcOXEZuecvQcY0fADaf4Sld6RWfSdZEAnhwPv1hA0ThLQ4MEBkNek3ZT17eAI6Nsmc_BuKIlsbNoJgdZ4tZRfT5LRPrHy-W_DL3IAO2nYKAoeOHCA9h2qqbs0uwyTzK0-V0qSzNjE8zDplxt-_msE_fq1H1iVFH4JvldxqMhncR97vGWJCDkEq1weQJdon8zkk7WUIrSma" 
-              alt="Ananya Sharma"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-on-primary-container/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-0 p-stack-lg text-on-primary">
-              <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-sm font-label-sm mb-2 inline-block">ACADEMIC TOPPER</span>
-              <h3 className="font-headline-md text-headline-md">Ananya Sharma</h3>
-              <p className="font-body-sm text-body-sm opacity-90">Full Stack Web Development - Grade: A+</p>
+      ) : error ? (
+        <div className="py-16 max-w-md mx-auto text-center bg-error-container text-on-error-container p-6 rounded-2xl border border-error/20">
+          <span className="material-symbols-outlined text-4xl text-error mb-2">warning</span>
+          <p className="font-body-md font-semibold">{error}</p>
+          <button 
+            onClick={fetchResults}
+            className="mt-4 px-6 py-2 bg-error text-on-error rounded-lg font-label-md text-xs hover:opacity-90 transition-opacity"
+          >
+            Retry Load
+          </button>
+        </div>
+      ) : results.length === 0 ? (
+        <div className="py-16 text-center">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">school</span>
+          <p className="font-body-lg text-on-surface-variant">No academic achievements recorded yet.</p>
+        </div>
+      ) : (
+        <section>
+          <div className="flex items-end justify-between mb-stack-lg">
+            <div className="space-y-2">
+              <h2 className="font-headline-lg text-headline-lg text-on-surface">Student Achievements</h2>
+              <div className="h-1 w-24 bg-primary-container rounded-full"></div>
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            {/* Main Topper Card */}
+            {mainTopper && (
+              <div className="md:col-span-6 lg:col-span-4 group relative overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant shadow-sm hover:shadow-lg transition-all duration-300">
+                <div className="w-full h-80 bg-primary/10 flex flex-col items-center justify-center text-primary text-5xl font-bold">
+                  <span>{getInitials(mainTopper.studentName)}</span>
+                  <span className="text-headline-sm mt-3 font-semibold">{mainTopper.percentage}%</span>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-on-primary-container/80 via-transparent to-transparent"></div>
+                <div className="absolute bottom-0 p-stack-lg text-on-primary w-full">
+                  <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-sm font-label-sm mb-2 inline-block font-bold">ACADEMIC TOPPER</span>
+                  <h3 className="font-headline-md text-headline-md font-bold">{mainTopper.studentName}</h3>
+                  <p className="font-body-sm text-body-sm opacity-90">{mainTopper.courseName} - Grade: {mainTopper.grade}</p>
+                </div>
+              </div>
+            )}
 
-          {/* Secondary Topper Grid */}
-          <div className="md:col-span-6 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-gutter">
-            <div className="p-stack-lg bg-surface-container-low rounded-xl border border-outline-variant flex items-center gap-4 hover:border-primary transition-colors cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shrink-0">
-                <span className="material-symbols-outlined text-3xl">school</span>
-              </div>
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">Rahul Varma</h4>
-                <p className="text-on-surface-variant text-body-sm">Data Science - Grade: A+</p>
-              </div>
-            </div>
-            <div className="p-stack-lg bg-surface-container-low rounded-xl border border-outline-variant flex items-center gap-4 hover:border-primary transition-colors cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
-                <span className="material-symbols-outlined text-3xl">workspace_premium</span>
-              </div>
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">Sneha Patil</h4>
-                <p className="text-on-surface-variant text-body-sm">UI/UX Design - Grade: A</p>
-              </div>
-            </div>
-            <div className="p-stack-lg bg-surface-container-low rounded-xl border border-outline-variant flex items-center gap-4 hover:border-primary transition-colors cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container shrink-0">
-                <span className="material-symbols-outlined text-3xl">verified</span>
-              </div>
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">Vikram Singh</h4>
-                <p className="text-on-surface-variant text-body-sm">Python Pro - Grade: A+</p>
-              </div>
-            </div>
-            <div className="p-stack-lg bg-surface-container-low rounded-xl border border-outline-variant flex items-center gap-4 hover:border-primary transition-colors cursor-pointer group">
-              <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container shrink-0">
-                <span className="material-symbols-outlined text-3xl">military_tech</span>
-              </div>
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">Priya Das</h4>
-                <p className="text-on-surface-variant text-body-sm">Cyber Security - Grade: A</p>
-              </div>
+            {/* Secondary Topper Grid */}
+            <div className="md:col-span-6 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+              {secondaryToppers.map((topper, index) => (
+                <div 
+                  key={topper._id} 
+                  className="p-stack-lg bg-surface-container-low rounded-xl border border-outline-variant flex items-center gap-4 hover:border-primary transition-colors cursor-pointer group"
+                >
+                  <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0 font-bold ${
+                    index % 3 === 0 ? 'bg-primary-container text-on-primary-container' :
+                    index % 3 === 1 ? 'bg-secondary-container text-on-secondary-container' :
+                    'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+                  }`}>
+                    <span className="text-sm">{getInitials(topper.studentName)}</span>
+                    <span className="text-[10px] font-light">{topper.percentage}%</span>
+                  </div>
+                  <div>
+                    <h4 className="font-headline-sm text-headline-sm text-on-surface font-bold">{topper.studentName}</h4>
+                    <p className="text-on-surface-variant text-body-sm">{topper.courseName} - Grade: {topper.grade}</p>
+                  </div>
+                </div>
+              ))}
+              {secondaryToppers.length === 0 && (
+                <div className="col-span-2 flex items-center justify-center p-8 bg-surface-container-low rounded-xl border border-outline-variant/30 text-on-surface-variant">
+                  More toppers will be updated soon.
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Certificates Showcase */}
       <section className="bg-surface-container-lowest rounded-3xl p-stack-lg border border-outline-variant">
@@ -152,15 +197,15 @@ const Results = () => {
         </div>
         <div className="mt-stack-lg grid grid-cols-1 md:grid-cols-3 gap-gutter">
           <div className="p-stack-lg bg-primary/5 rounded-2xl border-l-4 border-primary space-y-2">
-            <h5 className="font-headline-sm text-headline-sm text-primary">500+</h5>
+            <h5 className="font-headline-sm text-headline-sm text-primary font-bold">500+</h5>
             <p className="font-body-md text-on-surface">Students Placed this Year</p>
           </div>
           <div className="p-stack-lg bg-primary/5 rounded-2xl border-l-4 border-primary space-y-2">
-            <h5 className="font-headline-sm text-headline-sm text-primary">12 LPA</h5>
+            <h5 className="font-headline-sm text-headline-sm text-primary font-bold">12 LPA</h5>
             <p className="font-body-md text-on-surface">Highest Package Offered</p>
           </div>
           <div className="p-stack-lg bg-primary/5 rounded-2xl border-l-4 border-primary space-y-2">
-            <h5 className="font-headline-sm text-headline-sm text-primary">95%</h5>
+            <h5 className="font-headline-sm text-headline-sm text-primary font-bold">95%</h5>
             <p className="font-body-md text-on-surface">Placement Success Rate</p>
           </div>
         </div>
@@ -193,7 +238,7 @@ const Results = () => {
                   />
                 </div>
                 <div>
-                  <h4 className="font-label-md text-label-md text-on-surface">{story.name}</h4>
+                  <h4 className="font-label-md text-label-md text-on-surface font-bold">{story.name}</h4>
                   <p className="text-label-sm text-on-surface-variant">{story.placement}</p>
                 </div>
               </div>

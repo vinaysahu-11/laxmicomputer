@@ -22,3 +22,7 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Local databases
+mongodb_data/
+server/data/

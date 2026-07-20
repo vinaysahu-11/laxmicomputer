@@ -1,64 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import reviewService from '../../services/reviewService';
+import successStoryService from '../../services/successStoryService';
 
 const Reviews = () => {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [successStories, setSuccessStories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const reviews = [
-    {
-      id: 1,
-      name: 'Priya Sharma',
-      role: 'Web Design Graduate',
-      category: 'Coding',
-      rating: 5,
-      text: '"Laxmi Computer Education changed my career trajectory. The Web Design course was practical and the faculty was incredibly supportive during the placement process."',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCuQirGqNIUNzGyq6uV2NIrQW_L83-pndMjKWlWW1_VkkZi37FV_KnSYsms10zhpAtiU8QqRdMciXv_GYtTSUKW3fM-eY41l9pc-lvU7CHjdKJSjrcFPWgLgGJLO4eHbZSdRULrtxS4awyUcPdKgjb3YERye3Ih_gq56QzIN4N5GxeUVPrNKu4x65rBeyZFsaDqka-wl8iY1Jc0zhQt-OOJs2yWntlW7jRyiBQ9H_VxyiI5s2629cYfkqllttTKb0qbztuKI6U1Hcr_',
-      initials: 'PS'
-    },
-    {
-      id: 2,
-      name: 'Anil Kumar',
-      role: 'Accounting Pro',
-      category: 'Accounting',
-      rating: 5,
-      text: '"The Tally Prime and GST modules were exactly what I needed for my accounting job. The hands-on training on real datasets was the best part."',
-      image: null,
-      initials: 'AK'
-    },
-    {
-      id: 3,
-      name: 'Rahul Varma',
-      role: 'DCA Student',
-      category: 'Basic IT',
-      rating: 5,
-      text: '"Starting from scratch in DCA, I never thought I would be so comfortable with MS Office and basic programming. Truly the best institute in the city."',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCpAKEhyiazoVqe6QnUFT_-SONxUE2uga0ty73s0h1Cka3I4Nx2wSYXOmuOjnHDKAFNFrMLO7eoeOYghlvMA7x130kVKdtBwGAgkJa-bdpCo4Mamyf8LkXBjEpziWzPYad_FgYVEiG18heXXkVhpIQCQN66ROSBxvystY5rH0R21WDdoXyvGwsr-QMkMVbmv-kLi3eES9L8Jgn30eMlToby1ceRcqhqUIWTPyhdgtki4mzngT5v6fK3YCtn511Frrv9iFu2V-SH1rbT',
-      initials: 'RV'
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [reviewsData, storiesData] = await Promise.all([
+        reviewService.getReviews(),
+        successStoryService.getSuccessStories(true)
+      ]);
+      setReviews(reviewsData || []);
+      setSuccessStories(storiesData || []);
+      setError('');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load student reviews and success stories.');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const categories = ['All', 'Coding', 'Accounting', 'Basic IT'];
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const getYouTubeDetails = (url) => {
+    if (!url) return null;
+    const videoId = getYouTubeId(url);
+    if (!videoId) return null;
+    return {
+      videoId,
+      embedUrl: `https://www.youtube.com/embed/${videoId}`,
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+      maxResThumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    };
+  };
+
+  const textReviews = reviews.filter(r => !r.videoUrl || r.videoUrl.trim() === '');
+  const categories = ['All', ...new Set(textReviews.map(r => r.courseName || 'General'))];
 
   const filteredReviews = activeFilter === 'All'
-    ? reviews
-    : reviews.filter(r => r.category === activeFilter);
+    ? textReviews
+    : textReviews.filter(r => (r.courseName || 'General') === activeFilter);
 
-  const videoTestimonials = [
-    {
-      id: 1,
-      title: "Meera's Journey to Front-End Developer",
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDz_JxcCJ-xe5iuCZ70T2x_T5X4cb1OVvyY0HfKvaqhbULj0IuvvL8vos3U2YbUmxMKWn4jnzIAAYpoxx0K2Rmua9W_5lNHLQWRD_fJmd24a66anjuZsNYYMtysTiAa81VbqRKLMzyVLeqX7hf00bAWYF3X_URQbW8MjOMrlshd5AmwfVeyRRVQaOdv_O-VNjey2MtSe99DHxRrRxvmqr_MQhNuM3r4-UB33sEwFT6GIqqIUrVJrCnuUX_YEXq36MUndv0mrof59ln8',
-      url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-    },
-    {
-      id: 2,
-      title: "How Tally Transformed Rohan's Business",
-      thumbnail: 'https://lh3.googleusercontent.com/aida-public/AB6AXuASL3fk9lmwNiVkfq34gf40ohrCuWk_pXtzvxrUKDMhRMDLdH9vB7gsYugT-ZxxTILxtM4dJgu4zM13-987jlCz-cV_4kXnOXn-FikaDaZ-EEyzH4D4uq13YM01M-XazIHWO3REglHnzZE-UzSK7akqRw_BDHs7c9qN1MbXnCb6tyFymuLg67L7WPJNV4ODgpWn3_TG11GbCxPqEFCrhMSLQNICiz2OwHE67t_F-lfArm5Il1yOFwIIqrg7zmMRyCOGGWpN4cNF2uts',
-      url: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-    }
-  ];
+  const getInitials = (name) => {
+    if (!name) return 'ST';
+    const parts = name.split(' ');
+    return parts.map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2) || 'ST';
+  };
+
+  const videoTestimonials = successStories
+    .map(s => {
+      const ytDetails = getYouTubeDetails(s.youtubeUrl);
+      const thumbnail = s.thumbnail && s.thumbnail.trim() !== ''
+        ? (s.thumbnail.startsWith('http') ? s.thumbnail : `http://localhost:5000${s.thumbnail}`)
+        : (ytDetails ? ytDetails.maxResThumbnailUrl : '');
+      return {
+        id: s._id,
+        title: s.title,
+        description: s.description,
+        thumbnail,
+        url: ytDetails ? ytDetails.embedUrl : '',
+        studentName: s.studentName
+      };
+    })
+    .filter(v => v.url !== '');
 
   return (
     <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg">
@@ -101,62 +124,94 @@ const Reviews = () => {
       </section>
 
       {/* Filter/Search */}
-      <section className="flex flex-col md:flex-row items-center justify-between gap-gutter py-stack-md mt-12 mb-8">
-        <h2 className="font-headline-md text-headline-md text-on-surface">Student Testimonials</h2>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`px-6 py-2 rounded-full font-label-md transition-all duration-200 ${
-                activeFilter === cat
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-secondary-container text-on-secondary-container hover:bg-primary/10'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Testimonials Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter transition-all duration-300">
-        {filteredReviews.map((review) => (
-          <div
-            key={review.id}
-            className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant shadow-sm bento-card flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex gap-1 text-amber-400 mb-4">
-                {[...Array(review.rating)].map((_, i) => (
-                  <span key={i} className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                ))}
-              </div>
-              <p className="font-body-md text-body-md text-on-surface-variant mb-6 italic">
-                {review.text}
-              </p>
-            </div>
-            <div className="flex items-center gap-stack-md">
-              {review.image ? (
-                <img
-                  alt=""
-                  className="w-12 h-12 rounded-full object-cover"
-                  src={review.image}
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
-                  {review.initials}
-                </div>
-              )}
-              <div>
-                <h4 className="font-headline-sm text-headline-sm text-on-surface">{review.name}</h4>
-                <p className="font-label-sm text-label-sm text-primary uppercase">{review.role}</p>
-              </div>
-            </div>
+      {!loading && !error && (
+        <section className="flex flex-col md:flex-row items-center justify-between gap-gutter py-stack-md mt-12 mb-8 w-full">
+          <h2 className="font-headline-md text-headline-md text-on-surface">Student Testimonials</h2>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveFilter(cat)}
+                className={`px-6 py-2 rounded-full font-label-md transition-all duration-200 ${
+                  activeFilter === cat
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-secondary-container text-on-secondary-container hover:bg-primary/10'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
-        ))}
-      </section>
+        </section>
+      )}
+
+      {/* Testimonials Grid / Loading / Error */}
+      {loading ? (
+        <div className="py-24 text-center">
+          <span className="material-symbols-outlined animate-spin text-4xl text-primary mb-3">sync</span>
+          <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Syncing testimonials...</p>
+        </div>
+      ) : error ? (
+        <div className="py-16 max-w-md mx-auto text-center bg-error-container text-on-error-container p-6 rounded-2xl border border-error/20">
+          <span className="material-symbols-outlined text-4xl text-error mb-2">warning</span>
+          <p className="font-body-md font-semibold">{error}</p>
+          <button 
+            onClick={fetchReviews}
+            className="mt-4 px-6 py-2 bg-error text-on-error rounded-lg font-label-md text-xs hover:opacity-90 transition-opacity"
+          >
+            Retry Load
+          </button>
+        </div>
+      ) : filteredReviews.length === 0 ? (
+        <div className="py-16 text-center w-full">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">rate_review</span>
+          <p className="font-body-lg text-on-surface-variant">No testimonials found for this category.</p>
+        </div>
+      ) : (
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter transition-all duration-300">
+          {filteredReviews.map((review) => {
+            const hasPhoto = review.studentPhoto && review.studentPhoto.trim() !== '';
+            const photoSrc = hasPhoto 
+              ? (review.studentPhoto.startsWith('http') ? review.studentPhoto : `http://localhost:5000${review.studentPhoto}`)
+              : null;
+            
+            return (
+              <div
+                key={review._id}
+                className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant shadow-sm bento-card flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex gap-1 text-amber-400 mb-4">
+                    {[...Array(review.rating || 5)].map((_, i) => (
+                      <span key={i} className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                    ))}
+                  </div>
+                  <p className="font-body-md text-body-md text-on-surface-variant mb-6 italic">
+                    "{review.reviewText}"
+                  </p>
+                </div>
+                <div className="flex items-center gap-stack-md mt-auto">
+                  {photoSrc ? (
+                    <img
+                      alt={review.studentName}
+                      className="w-12 h-12 rounded-full object-cover"
+                      src={photoSrc}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
+                      {getInitials(review.studentName)}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-headline-sm text-headline-sm text-on-surface">{review.studentName}</h4>
+                    <p className="font-label-sm text-label-sm text-primary uppercase">{review.courseName || 'Student'}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {/* Video Testimonials Section */}
       <section className="py-24 space-y-stack-lg">
@@ -229,10 +284,10 @@ const Reviews = () => {
                 allowFullScreen
               />
             </div>
-            <div className="p-6 bg-surface">
+            <div className="p-6 bg-surface text-left">
               <h3 className="font-headline-md text-headline-md text-on-surface mb-2">{selectedVideo.title}</h3>
-              <p className="font-body-md text-on-surface-variant">
-                Discover how Laxmi Computer Education equips thousands of students with professional computing skills, direct real-world project portfolios, and robust job opportunities.
+              <p className="font-body-md text-on-surface-variant leading-relaxed">
+                {selectedVideo.description || "Discover how Laxmi Computer Education equips thousands of students with professional computing skills, direct real-world project portfolios, and robust job opportunities."}
               </p>
             </div>
           </div>

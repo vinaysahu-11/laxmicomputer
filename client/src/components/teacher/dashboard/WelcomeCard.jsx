@@ -1,13 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const WelcomeCard = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-primary text-on-primary p-8 flex flex-col justify-between shadow-lg select-none text-left">
       <div className="relative z-10">
-        <h2 className="font-headline-lg text-headline-lg font-bold mb-2">Welcome back, Prof. Rajesh!</h2>
+        <h2 className="font-headline-lg text-headline-lg font-bold mb-2">Welcome back, {user?.name || 'Professor'}!</h2>
         <p className="font-body-md text-body-md opacity-90 max-w-md font-light leading-relaxed">
           Your students have completed 85% of their weekly assignments. Great progress this semester!
         </p>

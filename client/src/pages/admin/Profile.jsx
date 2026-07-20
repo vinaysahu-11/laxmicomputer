@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 const Profile = () => {
+  const { user } = useSelector((state) => state.auth);
+
   // 1. Personal Identity info
-  const [fullName, setFullName] = useState('Dr. Julian Vance');
-  const [professionalTitle, setProfessionalTitle] = useState('System Administrator');
-  const [email, setEmail] = useState('julian.vance@eduacademy.org');
+  const [fullName, setFullName] = useState('');
+  const [professionalTitle, setProfessionalTitle] = useState('');
+  const [email, setEmail] = useState('');
+
+  // Sync state with logged in user
+  useEffect(() => {
+    if (user) {
+      setFullName(user.name || '');
+      setProfessionalTitle(user.role === 'admin' ? 'System Administrator' : user.role === 'teacher' ? 'Faculty Member' : 'Student');
+      setEmail(user.email || '');
+    }
+  }, [user]);
 
   // 2. Security passwords
   const [currentPassword, setCurrentPassword] = useState('');
@@ -121,11 +133,17 @@ const Profile = () => {
                 
                 {/* Profile Picture section */}
                 <div className="relative group shrink-0">
-                  <img 
-                    alt="Admin User Avatar" 
-                    className="w-32 h-32 rounded-xl object-cover border-4 border-surface-container shadow-sm" 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGyV-A6T6AOowE6t897dT1583pf_Xr3n-nMiP-5iJ8lYHW6UtsqFccsh3wN54lAsU5yw-XjzyWhWfMyZ0XtX81vRWBAsnsUHu9U7hEq6GJVZPSOU4hrpZaq9N9Z6hjGhMQ_Tes2gqArM1QH7npKzr1b4vqpntPx24d4bmiA-q_OsVvvrD4XRYmih0arsHx_ruwP-delNASIfTL-fHrt1lAWR5lvxCVsmJzZZQPi6L4gZIMZxpUgDee2RjDcytl1oopnyTQJ_D22fr5"
-                  />
+                  {user?.profilePhoto || user?.photo ? (
+                    <img 
+                      alt="Admin User Avatar" 
+                      className="w-32 h-32 rounded-xl object-cover border-4 border-surface-container shadow-sm" 
+                      src={user.profilePhoto || user.photo}
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold text-3xl border-4 border-surface-container shadow-sm">
+                      {fullName ? fullName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : 'AD'}
+                    </div>
+                  )}
                   <button 
                     type="button"
                     onClick={handleUploadPhoto}
@@ -253,7 +271,7 @@ const Profile = () => {
                   <span className="material-symbols-outlined text-[32px]">verified_user</span>
                 </div>
                 <span className="bg-white/20 border border-white/10 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider">
-                  System Admin
+                  {user?.role === 'admin' ? 'Super Admin' : user?.role === 'teacher' ? 'Faculty Member' : 'Student'}
                 </span>
               </div>
               <p className="text-white/80 font-label-sm text-label-sm mb-1 uppercase font-bold tracking-wider">Account Active Since</p>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -115,6 +116,8 @@ const Dashboard = () => {
     ]
   };
 
+  const { user } = useSelector((state) => state.auth);
+
   return (
     <div className="space-y-stack-lg text-left relative">
       
@@ -129,7 +132,7 @@ const Dashboard = () => {
       {/* Hero Greeting */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-stack-md bg-gradient-to-r from-primary/10 to-transparent p-6 rounded-2xl border border-primary/5">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Welcome back, Arjun! 👋</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Welcome back, {user?.name || 'Student'}! 👋</h2>
           <p className="font-body-lg text-on-surface-variant mt-1.5">You've completed 75% of your weekly learning goal. Keep it up!</p>
         </div>
         <div className="flex gap-3 mt-4 md:mt-0">

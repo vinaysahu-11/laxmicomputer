@@ -3,6 +3,8 @@ import MainLayout from '../layouts/MainLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import TeacherLayout from '../layouts/TeacherLayout';
 import StudentLayout from '../layouts/StudentLayout';
+import ProtectedRoute from './ProtectedRoute';
+import RoleRoute from './RoleRoute';
 
 // Public Pages
 import Home from '../pages/public/Home';
@@ -17,7 +19,6 @@ import Contact from '../pages/public/Contact';
 
 // Auth Pages
 import Login from '../pages/auth/Login';
-import Register from '../pages/auth/Register';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 
@@ -25,6 +26,7 @@ import ResetPassword from '../pages/auth/ResetPassword';
 import Dashboard from '../pages/admin/Dashboard';
 import Students from '../pages/admin/Students';
 import Teachers from '../pages/admin/Teachers';
+import UsersAdmin from '../pages/admin/Users';
 import CoursesAdmin from '../pages/admin/Courses';
 import Admissions from '../pages/admin/Admissions';
 import Attendance from '../pages/admin/Attendance';
@@ -32,6 +34,7 @@ import ResultsAdmin from '../pages/admin/Results';
 import Payments from '../pages/admin/Payments';
 import GalleryAdmin from '../pages/admin/Gallery';
 import ReviewsAdmin from '../pages/admin/Reviews';
+import SuccessStoriesAdmin from '../pages/admin/SuccessStories';
 import Notifications from '../pages/admin/Notifications';
 import Settings from '../pages/admin/Settings';
 import Profile from '../pages/admin/Profile';
@@ -77,57 +80,75 @@ function AppRoutes() {
         <Route path="admission" element={<Admission />} />
         <Route path="contact" element={<Contact />} />
         <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password" element={<ResetPassword />} />
       </Route>
-
       {/* Admin Panel Routes */}
-      <Route path="admin" element={<AdminLayout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="students" element={<Students />} />
-        <Route path="teachers" element={<Teachers />} />
-        <Route path="courses" element={<CoursesAdmin />} />
-        <Route path="admissions" element={<Admissions />} />
-        <Route path="attendance" element={<Attendance />} />
-        <Route path="results" element={<ResultsAdmin />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="gallery" element={<GalleryAdmin />} />
-        <Route path="reviews" element={<ReviewsAdmin />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="profile" element={<Profile />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<RoleRoute allowedRoles={['admin']} />}>
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="students" element={<Students />} />
+            <Route path="teachers" element={<Teachers />} />
+            <Route path="users" element={<UsersAdmin />} />
+            <Route path="courses" element={<CoursesAdmin />} />
+            <Route path="admissions" element={<Admissions />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="results" element={<ResultsAdmin />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="gallery" element={<GalleryAdmin />} />
+            <Route path="reviews" element={<ReviewsAdmin />} />
+            <Route path="success-stories" element={<SuccessStoriesAdmin />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+        </Route>
       </Route>
 
       {/* Teacher Panel Routes */}
-      <Route path="teacher" element={<TeacherLayout />}>
-        <Route index element={<TeacherDashboard />} />
-        <Route path="classes" element={<TeacherClasses />} />
-        <Route path="students" element={<TeacherStudents />} />
-        <Route path="attendance" element={<TeacherAttendance />} />
-        <Route path="exams" element={<TeacherExams />} />
-        <Route path="materials" element={<TeacherMaterials />} />
-        <Route path="assignments" element={<TeacherAssignments />} />
-        <Route path="results" element={<TeacherResults />} />
-        <Route path="notifications" element={<TeacherNotifications />} />
-        <Route path="profile" element={<TeacherProfile />} />
-        <Route path="settings" element={<TeacherSettings />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<RoleRoute allowedRoles={['teacher']} />}>
+          <Route path="teacher" element={<TeacherLayout />}>
+            <Route index element={<TeacherDashboard />} />
+            <Route path="dashboard" element={<TeacherDashboard />} />
+            <Route path="classes" element={<TeacherClasses />} />
+            <Route path="students" element={<TeacherStudents />} />
+            <Route path="attendance" element={<TeacherAttendance />} />
+            <Route path="exams" element={<TeacherExams />} />
+            <Route path="materials" element={<TeacherMaterials />} />
+            <Route path="assignments" element={<TeacherAssignments />} />
+            <Route path="results" element={<TeacherResults />} />
+            <Route path="notifications" element={<TeacherNotifications />} />
+            <Route path="profile" element={<TeacherProfile />} />
+            <Route path="settings" element={<TeacherSettings />} />
+          </Route>
+        </Route>
       </Route>
 
       {/* Student Panel Routes */}
-      <Route path="student" element={<StudentLayout />}>
-        <Route index element={<StudentDashboard />} />
-        <Route path="courses" element={<StudentCourses />} />
-        <Route path="classes" element={<StudentClasses />} />
-        <Route path="exams" element={<StudentExams />} />
-        <Route path="attendance" element={<StudentAttendance />} />
-        <Route path="results" element={<StudentResults />} />
-        <Route path="certificates" element={<StudentCertificates />} />
-        <Route path="payments" element={<StudentPayments />} />
-        <Route path="notifications" element={<StudentNotifications />} />
-        <Route path="profile" element={<StudentProfile />} />
-        <Route path="settings" element={<StudentSettings />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<RoleRoute allowedRoles={['student']} />}>
+          <Route path="student" element={<StudentLayout />}>
+            <Route index element={<StudentDashboard />} />
+            <Route path="dashboard" element={<StudentDashboard />} />
+            <Route path="courses" element={<StudentCourses />} />
+            <Route path="classes" element={<StudentClasses />} />
+            <Route path="exams" element={<StudentExams />} />
+            <Route path="attendance" element={<StudentAttendance />} />
+            <Route path="results" element={<StudentResults />} />
+            <Route path="certificates" element={<StudentCertificates />} />
+            <Route path="payments" element={<StudentPayments />} />
+            <Route path="notifications" element={<StudentNotifications />} />
+            <Route path="profile" element={<StudentProfile />} />
+            <Route path="settings" element={<StudentSettings />} />
+          </Route>
+        </Route>
       </Route>
+
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
