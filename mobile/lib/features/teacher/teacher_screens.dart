@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
-import '../../core/widgets/custom_app_bar.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/profile_card.dart';
 
 // ----------------------------------------------------
 // 1. TEACHER DASHBOARD SCREEN (Screenshot 16)
@@ -2436,20 +2433,381 @@ class TeacherTestsScreen extends StatelessWidget {
   }
 }
 
-// 9. Exams Screen
+// 9. Exams Screen (Exam Management Portal - Screenshot 1)
 class TeacherExamsScreen extends StatelessWidget {
   const TeacherExamsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Term Exams'),
-      body: Center(
-        child: Text(
-          'Manage Final Certification & Term Exams (Placeholder)',
-          style: TextStyle(color: Theme.of(context).colorScheme.outline),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16.0),
+          child: CircleAvatar(
+            radius: 14,
+            backgroundImage: NetworkImage(
+              'https://lh3.googleusercontent.com/aida-public/AB6AXuDxwA6hJcaDrniWKSWspyJHRyIP_QbgFu_gJx5yt7wnlBjm3BUhi1E5mEli_By2b4zboSH-qQ7I5DGtZii3RV8dLe44_tG1yGRP3OWkljBsujkb-U3PjGxC5NH9uh932HLOXI6VDF0ASNAkhy32t1RQBUKktt-a7UsToaNi4vd6HvnHYUGkad6MDSafekG9hDc1vXAgTy6CGhIJFj7IEQ_Yx95wWW7tixY25dccjOzrC2ic0m8hFQ0x6nGG4PFcNCgj4R_fcsQ8ZmaH',
+            ),
+          ),
+        ),
+        title: const Text(
+          'Computer Academy',
+          style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 16.0),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.settings, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Exam Management\nPortal',
+              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), height: 1.25),
+            ),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Centralized hub for scheduling, paper\nmanagement, and student evaluation.',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.35),
+            ),
+            const SizedBox(height: 20.0),
+
+            // Base options cards
+            _buildOptionNavCard(
+              title: 'Schedule Exam',
+              desc: 'Plan new test dates and assign venues.',
+              icon: Icons.calendar_today_outlined,
+              iconColor: Colors.blue,
+            ),
+            const SizedBox(height: 12.0),
+            _buildOptionNavCard(
+              title: 'Question Papers',
+              desc: 'Securely submit exam documents.',
+              icon: Icons.upload_file_outlined,
+              iconColor: Colors.indigo,
+            ),
+            const SizedBox(height: 12.0),
+            _buildOptionNavCard(
+              title: 'Hall Tickets',
+              desc: 'Generate and distribute admit cards.',
+              icon: Icons.badge_outlined,
+              iconColor: Colors.teal,
+            ),
+
+            const SizedBox(height: 20.0),
+
+            // Semester Status Card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Semester Status', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+                          decoration: BoxDecoration(color: const Color(0xFF0088FF), borderRadius: BorderRadius.circular(4.0)),
+                          child: const Text('SPRING 2024', style: TextStyle(fontSize: 8.0, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Total Exams', style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B))),
+                        Text('24', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF005C9E))),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('Completion Progress', style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B))),
+                        Text('65%', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                    const SizedBox(height: 6.0),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3.0),
+                      child: const LinearProgressIndicator(
+                        value: 0.65,
+                        minHeight: 5.0,
+                        backgroundColor: Color(0xFFF1F5F9),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF005C9E)),
+                      ),
+                    ),
+                    const SizedBox(height: 16.0),
+                    Container(
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border(left: BorderSide(color: Colors.red.shade700, width: 4.0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pending Evaluations', style: TextStyle(fontSize: 11.0, color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 2.0),
+                          const Text('8 Courses awaiting marks upload', style: TextStyle(fontSize: 12.0, color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20.0),
+
+            // Quick Marks Entry
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.notes, color: Color(0xFF005C9E), size: 18.0),
+                        SizedBox(width: 6.0),
+                        Text('Quick Marks Entry', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    // Dropdown simulation
+                    const Text('Subject Code', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6.0),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                          Text('CS101 - Introduction to Python', style: TextStyle(fontSize: 13.0, color: Color(0xFF0F172A))),
+                          Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B), size: 20.0),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14.0),
+
+                    // Text field input
+                    const Text('Exam Batch', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6.0),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: const TextField(
+                        decoration: InputDecoration(
+                          hintText: 'e.g. BATCH-A-2024',
+                          hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14.0),
+
+                    // Bulk csv upload simulation
+                    const Text('Bulk Upload CSV', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6.0),
+                    Container(
+                      height: 110.0,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10.0),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.cloud_upload_outlined, color: Color(0xFF64748B), size: 24.0),
+                          SizedBox(height: 6.0),
+                          Text('Drag and drop student marks', style: TextStyle(fontSize: 11.5, color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+                          SizedBox(height: 2.0),
+                          Text('CSV or browse', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16.0),
+
+                    SizedBox(
+                      height: 40.0,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF005C9E),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                        ),
+                        icon: const Icon(Icons.send, size: 16.0),
+                        label: const Text('Submit Marks to Portal', style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold)),
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20.0),
+
+            // Live Exam Status
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('LIVE EXAM STATUS', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.5)),
+                        Row(
+                          children: [
+                            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                            const SizedBox(width: 4.0),
+                            const Text('LIVE', style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold, color: Colors.red)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFFE2E8F0), height: 24.0),
+
+                    _buildLiveExamRow('PY', 'Python Advanced', 'Lab Hall 3 \u2022 45 Students', '01:45:00 left', Colors.blue, Colors.blue),
+                    const Divider(color: Color(0xFFF1F5F9), height: 20.0),
+                    _buildLiveExamRow('DB', 'Database Systems', 'Main Hall \u2022 120 Students', 'Scheduled: 14:00', Colors.indigo, Colors.black45),
+                    const Divider(color: Color(0xFFF1F5F9), height: 20.0),
+                    _buildLiveExamRow('OS', 'Operating Systems', 'Seminar Room 1 \u2022 32 Students', 'Completed', Colors.teal, Colors.black26),
+
+                    const Divider(color: Color(0xFFE2E8F0), height: 24.0),
+                    GestureDetector(
+                      onTap: () {},
+                      child: const Text(
+                        'View All Schedules',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF005C9E)),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16.0),
+
+            // Note for Faculty
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(color: const Color(0xFFE8F2FF), borderRadius: BorderRadius.circular(12.0)),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info, color: Color(0xFF005C9E), size: 20.0),
+                  const SizedBox(width: 12.0),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text('Note for Faculty', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF005C9E))),
+                        SizedBox(height: 4.0),
+                        Text(
+                          'Question papers must be uploaded at least 48 hours prior to the scheduled exam time for verification.',
+                          style: TextStyle(fontSize: 12.0, color: Color(0xFF0F172A), height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 64.0),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOptionNavCard({required String title, required String desc, required IconData icon, required Color iconColor}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: iconColor.withOpacity(0.08),
+              child: Icon(icon, color: iconColor, size: 20.0),
+            ),
+            const SizedBox(width: 14.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  const SizedBox(height: 2.0),
+                  Text(desc, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveExamRow(String initial, String title, String subtitle, String status, Color bgColor, Color statusColor) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: bgColor.withOpacity(0.1),
+          child: Text(initial, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: bgColor)),
+        ),
+        const SizedBox(width: 12.0),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Text(subtitle, style: const TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+            ],
+          ),
+        ),
+        Text(status, style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: statusColor)),
+      ],
     );
   }
 }
@@ -3231,56 +3589,553 @@ class _TeacherNotificationsScreenState extends State<TeacherNotificationsScreen>
   }
 }
 
-// 12. Profile Screen
+// 12. TEACHER PROFILE SCREEN (Screenshot 3)
 class TeacherProfileScreen extends ConsumerWidget {
   const TeacherProfileScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Teacher Profile', showBackButton: false),
-      body: Padding(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        title: const Text(
+          'Computer Academy',
+          style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 16.0),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.settings, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ProfileCard(
-              name: 'Alex Rivera',
-              email: 'teacher@laxmi.com',
-              idLabel: 'Teacher ID',
-              idValue: 'TCH-2026-001',
+            // Avatar Rivera Info Card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                child: Column(
+                  children: [
+                    Stack(
+                      children: [
+                        const CircleAvatar(
+                          radius: 46.0,
+                          backgroundImage: NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuDxwA6hJcaDrniWKSWspyJHRyIP_QbgFu_gJx5yt7wnlBjm3BUhi1E5mEli_By2b4zboSH-qQ7I5DGtZii3RV8dLe44_tG1yGRP3OWkljBsujkb-U3PjGxC5NH9uh932HLOXI6VDF0ASNAkhy32t1RQBUKktt-a7UsToaNi4vd6HvnHYUGkad6MDSafekG9hDc1vXAgTy6CGhIJFj7IEQ_Yx95wWW7tixY25dccjOzrC2ic0m8hFQ0x6nGG4PFcNCgj4R_fcsQ8ZmaH'),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.white,
+                            child: Icon(Icons.verified, color: theme.colorScheme.primary, size: 18.0),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14.0),
+                    const Text('Dr. Aris Thorne', style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 2.0),
+                    const Text('Senior Faculty', style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 20.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 38.0,
+                          width: 140.0,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF005C9E),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                            ),
+                            onPressed: () {},
+                            child: const Text('Edit Profile', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 10.0),
+                        Container(
+                          height: 38.0,
+                          width: 44.0,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          child: IconButton(icon: const Icon(Icons.share_outlined, size: 18.0, color: Color(0xFF475569)), onPressed: () {}),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16.0),
+                    GestureDetector(
+                      onTap: () async {
+                        await ref.read(authNotifierProvider.notifier).logout();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.logout, size: 14.0, color: Colors.red),
+                          SizedBox(width: 6.0),
+                          Text('Logout', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 32.0),
-            CustomButton(
-              text: 'Log Out',
-              backgroundColor: Theme.of(context).colorScheme.error,
-              textColor: Theme.of(context).colorScheme.onError,
-              onPressed: () async {
-                await ref.read(authNotifierProvider.notifier).logout();
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              },
+
+            const SizedBox(height: 14.0),
+
+            // Personal Info Card
+            _buildProfileSectionCard(
+              title: 'Personal Info',
+              icon: Icons.person_outline,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMetaItem('EMAIL ADDRESS', 'a.thorne@academy.edu'),
+                  const SizedBox(height: 12.0),
+                  _buildMetaItem('PHONE NUMBER', '+1 (555) 012-3456'),
+                  const SizedBox(height: 12.0),
+                  _buildMetaItem('LOCATION', 'Silicon Valley, CA'),
+                ],
+              ),
             ),
+            const SizedBox(height: 14.0),
+
+            // Qualifications Card
+            _buildProfileSectionCard(
+              title: 'Qualifications',
+              icon: Icons.school_outlined,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQualificationItem('MCA (Computer Apps)', 'Stanford University, 2018', Icons.card_membership_outlined),
+                  const SizedBox(height: 12.0),
+                  _buildQualificationItem('B.Tech (CSE)', 'MIT, 2015', Icons.article_outlined),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14.0),
+
+            // Experience Card
+            _buildProfileSectionCard(
+              title: 'Experience',
+              icon: Icons.work_outline,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildQualificationItem('Lead AI Instructor', '3 Years \u2022 Tech Corp', Icons.business_outlined),
+                  const SizedBox(height: 12.0),
+                  _buildQualificationItem('Senior Developer', '5 Years \u2022 Global Soft', Icons.settings_input_component_outlined),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14.0),
+
+            // Assigned Subjects Card
+            _buildProfileSectionCard(
+              title: 'Assigned Subjects',
+              icon: Icons.library_books_outlined,
+              badgeText: '4 Active',
+              content: Column(
+                children: [
+                  _buildSubjectProgressRow('Advanced Algorithms', 0.75, '75% Course Progress'),
+                  const SizedBox(height: 12.0),
+                  _buildSubjectProgressRow('Machine Learning', 0.40, '40% Course Progress'),
+                  const SizedBox(height: 12.0),
+                  _buildSubjectProgressRow('Data Structures', 0.90, '90% Course Progress'),
+                  const SizedBox(height: 12.0),
+                  _buildSubjectProgressRow('Cloud Computing', 0.25, '25% Course Progress'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14.0),
+
+            // Statistics mini cards (Active Students, Rating, Certifications)
+            _buildStatisticsBannerCard('120', 'Active Students', const Color(0xFFE8F2FF)),
+            const SizedBox(height: 10.0),
+            _buildStatisticsBannerCard('4.9', 'Teacher Rating', const Color(0xFFF8FAFC)),
+            const SizedBox(height: 10.0),
+            _buildStatisticsBannerCard('18', 'Certifications', const Color(0xFFE8F2FF)),
+
+            const SizedBox(height: 64.0),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildProfileSectionCard({required String title, required IconData icon, String? badgeText, required Widget content}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: const Color(0xFF005C9E), size: 20.0),
+                    const SizedBox(width: 8.0),
+                    Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ],
+                ),
+                if (badgeText != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 3.0),
+                    decoration: BoxDecoration(color: const Color(0xFF0088FF), borderRadius: BorderRadius.circular(20.0)),
+                    child: Text(badgeText, style: const TextStyle(fontSize: 9.0, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+              ],
+            ),
+            const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+            content,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8))),
+        const SizedBox(height: 3.0),
+        Text(value, style: const TextStyle(fontSize: 13.0, color: Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildQualificationItem(String title, String desc, IconData prefixIcon) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: const Color(0xFFF1F5F9),
+          child: Icon(prefixIcon, color: const Color(0xFF64748B), size: 16.0),
+        ),
+        const SizedBox(width: 12.0),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Text(desc, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubjectProgressRow(String title, double value, String desc) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            Text(desc, style: const TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+          ],
+        ),
+        const SizedBox(height: 6.0),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2.0),
+          child: LinearProgressIndicator(
+            value: value,
+            minHeight: 4.5,
+            backgroundColor: const Color(0xFFF1F5F9),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF005C9E)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatisticsBannerCard(String val, String label, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14.0),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: Column(
+        children: [
+          Text(val, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
 }
 
-// 13. Settings Screen
-class TeacherSettingsScreen extends StatelessWidget {
+// ----------------------------------------------------
+// 13. TEACHER SETTINGS SCREEN (Screenshot 4)
+// ----------------------------------------------------
+class TeacherSettingsScreen extends StatefulWidget {
   const TeacherSettingsScreen({Key? key}) : super(key: key);
 
   @override
+  State<TeacherSettingsScreen> createState() => _TeacherSettingsScreenState();
+}
+
+class _TeacherSettingsScreenState extends State<TeacherSettingsScreen> {
+  bool _darkMode = false;
+  bool _notifications = true;
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Settings', showBackButton: false),
-      body: Center(
-        child: Text(
-          'Teacher Portal Settings & Configurations (Placeholder)',
-          style: TextStyle(color: Theme.of(context).colorScheme.outline),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        title: const Text(
+          'Computer Academy',
+          style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 16.0),
         ),
+        centerTitle: true,
+        actions: [
+          IconButton(icon: const Icon(Icons.settings, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Settings',
+              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Configure your teaching workspace and account preferences.',
+              style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 20.0),
+
+            // Preferences Card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Preferences', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+                    
+                    // Dark Mode Row
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 16, backgroundColor: const Color(0xFFE8F2FF), child: const Icon(Icons.dark_mode_outlined, size: 16.0, color: Color(0xFF005C9E))),
+                        const SizedBox(width: 12.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Dark Mode', style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                              Text('Adjust interface brightness', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _darkMode,
+                          onChanged: (val) => setState(() => _darkMode = val),
+                          activeColor: const Color(0xFF005C9E),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+
+                    // Notifications Row
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 16, backgroundColor: const Color(0xFFE8F2FF), child: const Icon(Icons.notifications_none_outlined, size: 16.0, color: Color(0xFF005C9E))),
+                        const SizedBox(width: 12.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Notifications', style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                              Text('Receive alerts for student activity', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _notifications,
+                          onChanged: (val) => setState(() => _notifications = val),
+                          activeColor: const Color(0xFF005C9E),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+
+                    // Language Row
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 16, backgroundColor: const Color(0xFFE8F2FF), child: const Icon(Icons.language_outlined, size: 16.0, color: Color(0xFF005C9E))),
+                        const SizedBox(width: 12.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Language', style: TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                              Text('Set your preferred UI language', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            borderRadius: BorderRadius.circular(6.0),
+                          ),
+                          child: const Text('English (US)', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14.0),
+
+            // Support Card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Support', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+                    
+                    _buildSupportNavButton('Help & Support', Icons.help_outline),
+                    const SizedBox(height: 10.0),
+                    _buildSupportNavButton('Security', Icons.lock_outline),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14.0),
+
+            // Account & Legal Card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Account & Legal', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+
+                    _buildLegalNavRow('Privacy Policy'),
+                    const Divider(color: Color(0xFFF1F5F9), height: 24.0),
+                    _buildLegalNavRow('Terms of Service'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 32.0),
+
+            // Footer Branding
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: theme.colorScheme.primary,
+                  child: const Icon(Icons.code, color: Colors.white, size: 20.0),
+                ),
+                const SizedBox(height: 8.0),
+                const Text('TECH ACADEMY', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF005C9E), letterSpacing: 0.5)),
+                const SizedBox(height: 2.0),
+                const Text('Teacher Suite', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                const SizedBox(height: 16.0),
+                const Text(
+                  'App Version v2.4.0\n\u00A9 2024 Tech Academy. All rights reserved.',
+                  style: TextStyle(fontSize: 11.0, color: Color(0xFF94A3B8), height: 1.4),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 64.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportNavButton(String label, IconData icon) {
+    return Container(
+      height: 40.0,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: InkWell(
+        onTap: () {},
+        child: Row(
+          children: [
+            const SizedBox(width: 12.0),
+            Icon(icon, color: const Color(0xFF005C9E), size: 18.0),
+            const SizedBox(width: 10.0),
+            Text(label, style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalNavRow(String label) {
+    return InkWell(
+      onTap: () {},
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.security, color: Color(0xFF64748B), size: 18.0),
+              const SizedBox(width: 12.0),
+              Text(label, style: const TextStyle(fontSize: 13.0, color: Color(0xFF475569), fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+        ],
       ),
     );
   }

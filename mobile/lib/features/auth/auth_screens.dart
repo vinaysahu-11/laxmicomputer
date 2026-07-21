@@ -445,49 +445,231 @@ class ForgotPasswordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final emailController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: AppBar(title: const Text('Forgot Password')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Reset Password Request',
-              style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8.0),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Row(
+          children: const [
             Text(
-              'Enter your registered email address below, and we will send you an OTP to reset your password.',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              'school ',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.normal, fontSize: 20.0),
             ),
-            const SizedBox(height: 32.0),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF0066AE), width: 2.0),
-                ),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 24.0),
-            CustomButton(
-              text: 'Send Verification OTP',
-              backgroundColor: const Color(0xFF005C9E),
-              onPressed: () => context.push('/otp-verify?email=${Uri.encodeComponent(emailController.text)}'),
+            Text(
+              'Computer\nAcademy',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.bold, fontSize: 16.0, height: 1.1),
             ),
           ],
         ),
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF475569)),
+            icon: const Icon(Icons.arrow_back, size: 14.0),
+            label: const Text('Back to\nLogin', style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, height: 1.1)),
+            onPressed: () => context.go('/login'),
+          ),
+          const SizedBox(width: 8.0),
+        ],
       ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      children: [
+                        const SizedBox(height: 16.0),
+                        // Inner Card
+                        Card(
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.0),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Top Icon
+                                Center(
+                                  child: CircleAvatar(
+                                    radius: 36,
+                                    backgroundColor: const Color(0xFFE8F2FF),
+                                    child: Icon(Icons.lock_reset, size: 36.0, color: const Color(0xFF005C9E)),
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+                                const Text(
+                                  'Reset Your Password',
+                                  style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 8.0),
+                                const Text(
+                                  'Enter your registered details to receive a\nsecure verification code.',
+                                  style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 28.0),
+
+                                // Steps row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildStepCircle('1', 'Verify OTP', true),
+                                    Container(
+                                      width: 60.0,
+                                      height: 1.0,
+                                      color: const Color(0xFFCBD5E1),
+                                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    ),
+                                    _buildStepCircle('2', 'New Password', false),
+                                  ],
+                                ),
+                                const SizedBox(height: 32.0),
+
+                                const Text(
+                                  'Email or Mobile',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.alternate_email, color: Color(0xFF64748B), size: 18.0),
+                                      const SizedBox(width: 8.0),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: emailController,
+                                          decoration: const InputDecoration(
+                                            hintText: 'teacher@academy.edu or +1...',
+                                            hintStyle: TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.symmetric(vertical: 12.0),
+                                          ),
+                                          keyboardType: TextInputType.emailAddress,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+
+                                SizedBox(
+                                  height: 46.0,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF005C9E),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                                    ),
+                                    onPressed: () {
+                                      final val = emailController.text;
+                                      context.push('/otp-verify?email=${Uri.encodeComponent(val.isNotEmpty ? val : 'teacher@academy.edu')}');
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Text('Send OTP ', style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold)),
+                                        Icon(Icons.send, size: 14.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+
+                                // Support Link
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text('Difficulty receiving OTP? ', style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+                                    GestureDetector(
+                                      onTap: () {},
+                                      child: const Text(
+                                        'Contact Support',
+                                        style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: Color(0xFF005C9E), decoration: TextDecoration.underline),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Footer Section
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24.0),
+                      child: Column(
+                        children: const [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.shield_outlined, size: 14.0, color: Color(0xFF64748B)),
+                              SizedBox(width: 4.0),
+                              Text('Secure 256-bit Encrypted Session', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                          SizedBox(height: 4.0),
+                          Text(
+                            '© 2024 Computer Academy. Academic Portal Security.',
+                            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(String step, String label, bool active) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 16.0,
+          backgroundColor: active ? Colors.white : const Color(0xFFF1F5F9),
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: active ? const Color(0xFF005C9E) : const Color(0xFFCBD5E1), width: 1.5),
+            ),
+            child: Text(
+              step,
+              style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6.0),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+        ),
+      ],
     );
   }
 }
@@ -499,49 +681,230 @@ class OtpVerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final otpController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: AppBar(title: const Text('OTP Verification')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Enter Verification Code',
-              style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8.0),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Row(
+          children: const [
             Text(
-              'We have sent a 6-digit OTP code to $email. Please enter it below to proceed.',
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              'school ',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.normal, fontSize: 20.0),
             ),
-            const SizedBox(height: 32.0),
-            TextField(
-              controller: otpController,
-              decoration: const InputDecoration(
-                labelText: 'OTP Code',
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF0066AE), width: 2.0),
-                ),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 24.0),
-            CustomButton(
-              text: 'Verify Code',
-              backgroundColor: const Color(0xFF005C9E),
-              onPressed: () => context.push('/reset-password?email=${Uri.encodeComponent(email)}'),
+            Text(
+              'Computer\nAcademy',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.bold, fontSize: 16.0, height: 1.1),
             ),
           ],
         ),
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF475569)),
+            icon: const Icon(Icons.arrow_back, size: 14.0),
+            label: const Text('Back to\nLogin', style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, height: 1.1)),
+            onPressed: () => context.go('/login'),
+          ),
+          const SizedBox(width: 8.0),
+        ],
       ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      children: [
+                        const SizedBox(height: 16.0),
+                        // Inner Card
+                        Card(
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.0),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Top Icon
+                                Center(
+                                  child: CircleAvatar(
+                                    radius: 36,
+                                    backgroundColor: const Color(0xFFE8F2FF),
+                                    child: Icon(Icons.lock_outline, size: 36.0, color: const Color(0xFF005C9E)),
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+                                const Text(
+                                  'Verify OTP',
+                                  style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 8.0),
+                                Text(
+                                  'A verification OTP has been sent to\n$email.',
+                                  style: const TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 28.0),
+
+                                // Steps row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildStepCircle('1', 'Verify OTP', true),
+                                    Container(
+                                      width: 60.0,
+                                      height: 1.0,
+                                      color: const Color(0xFFCBD5E1),
+                                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    ),
+                                    _buildStepCircle('2', 'New Password', false),
+                                  ],
+                                ),
+                                const SizedBox(height: 32.0),
+
+                                const Text(
+                                  'OTP Code',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.security, color: Color(0xFF64748B), size: 18.0),
+                                      const SizedBox(width: 8.0),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: otpController,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Enter 6-digit OTP',
+                                            hintStyle: TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.symmetric(vertical: 12.0),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+
+                                SizedBox(
+                                  height: 46.0,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF005C9E),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                                    ),
+                                    onPressed: () {
+                                      context.push('/reset-password?email=${Uri.encodeComponent(email)}');
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Text('Verify Code ', style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold)),
+                                        Icon(Icons.arrow_forward, size: 14.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+
+                                // Support Link
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text('Difficulty receiving OTP? ', style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+                                    GestureDetector(
+                                      onTap: () {},
+                                      child: const Text(
+                                        'Contact Support',
+                                        style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: Color(0xFF005C9E), decoration: TextDecoration.underline),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Footer Section
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24.0),
+                      child: Column(
+                        children: const [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.shield_outlined, size: 14.0, color: Color(0xFF64748B)),
+                              SizedBox(width: 4.0),
+                              Text('Secure 256-bit Encrypted Session', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                          SizedBox(height: 4.0),
+                          Text(
+                            '© 2024 Computer Academy. Academic Portal Security.',
+                            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(String step, String label, bool active) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 16.0,
+          backgroundColor: active ? Colors.white : const Color(0xFFF1F5F9),
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: active ? const Color(0xFF005C9E) : const Color(0xFFCBD5E1), width: 1.5),
+            ),
+            child: Text(
+              step,
+              style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6.0),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+        ),
+      ],
     );
   }
 }
@@ -557,56 +920,243 @@ class ResetPasswordScreen extends StatelessWidget {
     final confirmPassController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: AppBar(title: const Text('Reset Password')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Create New Password',
-              style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Row(
+          children: const [
+            Text(
+              'school ',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.normal, fontSize: 20.0),
             ),
-            const SizedBox(height: 8.0),
-            const Text('Your new password must be at least 8 characters long and different from previous passwords.'),
-            const SizedBox(height: 32.0),
-            TextField(
-              controller: passController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF0066AE), width: 2.0),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: confirmPassController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Confirm New Password',
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF0066AE), width: 2.0),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            CustomButton(
-              text: 'Save & Login',
-              backgroundColor: const Color(0xFF005C9E),
-              onPressed: () => context.go('/login'),
+            Text(
+              'Computer\nAcademy',
+              style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.bold, fontSize: 16.0, height: 1.1),
             ),
           ],
         ),
+        actions: [
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF475569)),
+            icon: const Icon(Icons.arrow_back, size: 14.0),
+            label: const Text('Back to\nLogin', style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, height: 1.1)),
+            onPressed: () => context.go('/login'),
+          ),
+          const SizedBox(width: 8.0),
+        ],
       ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      children: [
+                        const SizedBox(height: 16.0),
+                        // Inner Card
+                        Card(
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.0),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Top Icon
+                                Center(
+                                  child: CircleAvatar(
+                                    radius: 36,
+                                    backgroundColor: const Color(0xFFE8F2FF),
+                                    child: Icon(Icons.vpn_key_outlined, size: 36.0, color: const Color(0xFF005C9E)),
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+                                const Text(
+                                  'New Password',
+                                  style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 8.0),
+                                const Text(
+                                  'Set a strong, unique password to secure\nyour academic account.',
+                                  style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
+                                  textAlign: Center,
+                                ),
+                                const SizedBox(height: 28.0),
+
+                                // Steps row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    _buildStepCircle('1', 'Verify OTP', true),
+                                    Container(
+                                      width: 60.0,
+                                      height: 1.0,
+                                      color: const Color(0xFF005C9E),
+                                      margin: const EdgeInsets.symmetric(horizontal: 8.0),
+                                    ),
+                                    _buildStepCircle('2', 'New Password', true),
+                                  ],
+                                ),
+                                const SizedBox(height: 32.0),
+
+                                const Text(
+                                  'New Password',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.lock_outline, color: Color(0xFF64748B), size: 18.0),
+                                      const SizedBox(width: 8.0),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: passController,
+                                          obscureText: true,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Enter new password',
+                                            hintStyle: TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.symmetric(vertical: 12.0),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16.0),
+
+                                const Text(
+                                  'Confirm New Password',
+                                  style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                                    borderRadius: BorderRadius.circular(8.0),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.lock_clock_outlined, color: Color(0xFF64748B), size: 18.0),
+                                      const SizedBox(width: 8.0),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: confirmPassController,
+                                          obscureText: true,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Confirm new password',
+                                            hintStyle: TextStyle(fontSize: 13.5, color: Color(0xFF94A3B8)),
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.symmetric(vertical: 12.0),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24.0),
+
+                                SizedBox(
+                                  height: 46.0,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF005C9E),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                                    ),
+                                    onPressed: () {
+                                      context.go('/login');
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: const [
+                                        Text('Save & Login ', style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold)),
+                                        Icon(Icons.check_circle_outline, size: 14.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Footer Section
+                    Padding(
+                      padding: const EdgeInsets.only(top: 24.0),
+                      child: Column(
+                        children: const [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.shield_outlined, size: 14.0, color: Color(0xFF64748B)),
+                              SizedBox(width: 4.0),
+                              Text('Secure 256-bit Encrypted Session', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                          SizedBox(height: 4.0),
+                          Text(
+                            '© 2024 Computer Academy. Academic Portal Security.',
+                            style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(String step, String label, bool active) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 16.0,
+          backgroundColor: active ? Colors.white : const Color(0xFFF1F5F9),
+          child: Container(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: active ? const Color(0xFF005C9E) : const Color(0xFFCBD5E1), width: 1.5),
+            ),
+            child: Text(
+              step,
+              style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6.0),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: active ? const Color(0xFF005C9E) : const Color(0xFF64748B)),
+        ),
+      ],
     );
   }
 }
