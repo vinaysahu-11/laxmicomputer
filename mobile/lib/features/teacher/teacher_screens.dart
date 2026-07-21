@@ -5,7 +5,7 @@ import '../../core/providers/providers.dart';
 import '../../core/widgets/custom_app_bar.dart';
 import '../../core/widgets/custom_button.dart';
 import '../../core/widgets/profile_card.dart';
-import '../student/student_screens.dart'; // Reuse NavigationTile
+import '../../core/widgets/navigation_tile.dart';
 
 // 1. Teacher Dashboard Screen
 class TeacherDashboardScreen extends ConsumerWidget {

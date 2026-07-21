@@ -18,31 +18,51 @@ class StudentShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) => _onTap(context, index),
-        destinations: const [
+        indicatorColor: const Color(0xFFE8F2FF), // Custom active capsule light blue background
+        backgroundColor: Colors.white,
+        elevation: 8,
+        shadowColor: Colors.black.withOpacity(0.4),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 68.0,
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: Icon(Icons.grid_view_outlined, color: const Color(0xFF64748B)),
+            selectedIcon: Icon(Icons.grid_view, color: theme.colorScheme.primary),
+            label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
-            label: 'Notices',
+            icon: Icon(Icons.school_outlined, color: const Color(0xFF64748B)),
+            selectedIcon: Icon(Icons.school, color: theme.colorScheme.primary),
+            label: 'Courses',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: Icon(Icons.play_circle_outline, color: const Color(0xFF64748B)),
+            selectedIcon: Icon(Icons.play_circle, color: theme.colorScheme.primary),
+            label: 'Classes',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              backgroundColor: Colors.red,
+              smallSize: 8,
+              child: Icon(Icons.notifications_none_outlined, color: const Color(0xFF64748B)),
+            ),
+            selectedIcon: Badge(
+              backgroundColor: Colors.red,
+              smallSize: 8,
+              child: Icon(Icons.notifications, color: theme.colorScheme.primary),
+            ),
+            label: 'Alerts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline, color: const Color(0xFF64748B)),
+            selectedIcon: Icon(Icons.person, color: theme.colorScheme.primary),
             label: 'Profile',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
           ),
         ],
       ),
