@@ -179,6 +179,7 @@ class AppRouter {
               return TeacherShell(navigationShell: navigationShell);
             },
             branches: [
+              // Branch 0: Home / Dashboard
               StatefulShellBranch(
                 navigatorKey: _teacherShellNavigatorKey,
                 routes: [
@@ -186,12 +187,7 @@ class AppRouter {
                     path: '/teacher',
                     builder: (context, state) => const TeacherDashboardScreen(),
                     routes: [
-                      // Sub-pages pushed onto root navigation
-                      GoRoute(
-                        path: 'classes',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const TeacherClassesScreen(),
-                      ),
+                      // Sub-pages pushed onto root navigation (to hide bottom bar)
                       GoRoute(
                         path: 'classes/details',
                         parentNavigatorKey: _rootNavigatorKey,
@@ -199,11 +195,6 @@ class AppRouter {
                           final className = state.uri.queryParameters['className'] ?? 'Class Details';
                           return TeacherClassDetailsScreen(className: className);
                         },
-                      ),
-                      GoRoute(
-                        path: 'students',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const TeacherStudentsScreen(),
                       ),
                       GoRoute(
                         path: 'attendance',
@@ -214,11 +205,6 @@ class AppRouter {
                         path: 'materials',
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) => const TeacherStudyMaterialsScreen(),
-                      ),
-                      GoRoute(
-                        path: 'assignments',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const TeacherAssignmentsScreen(),
                       ),
                       GoRoute(
                         path: 'tests',
@@ -239,6 +225,25 @@ class AppRouter {
                   ),
                 ],
               ),
+              // Branch 1: Courses
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/teacher/courses',
+                    builder: (context, state) => const Scaffold(body: Center(child: Text('Courses Portal'))),
+                  ),
+                ],
+              ),
+              // Branch 2: Classes
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/teacher/classes',
+                    builder: (context, state) => const TeacherClassesScreen(),
+                  ),
+                ],
+              ),
+              // Branch 3: Alerts / Notifications
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -247,6 +252,7 @@ class AppRouter {
                   ),
                 ],
               ),
+              // Branch 4: Profile
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -255,15 +261,31 @@ class AppRouter {
                   ),
                 ],
               ),
+              // Branch 5: Students
               StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: '/teacher/settings',
-                    builder: (context, state) => const TeacherSettingsScreen(),
+                    path: '/teacher/students',
+                    builder: (context, state) => const TeacherStudentsScreen(),
+                  ),
+                ],
+              ),
+              // Branch 6: Assignments
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/teacher/assignments',
+                    builder: (context, state) => const TeacherAssignmentsScreen(),
                   ),
                 ],
               ),
             ],
+          ),
+          // Teacher settings route pushed on root navigator
+          GoRoute(
+            path: '/teacher/settings',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => const TeacherSettingsScreen(),
           ),
         ],
       );
