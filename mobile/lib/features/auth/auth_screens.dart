@@ -237,7 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       
                       // Remember Me & Forgot Password Row
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.between,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
@@ -512,13 +512,13 @@ class ForgotPasswordScreen extends StatelessWidget {
                                 const Text(
                                   'Reset Your Password',
                                   style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 8.0),
                                 const Text(
                                   'Enter your registered details to receive a\nsecure verification code.',
                                   style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 28.0),
 
@@ -718,7 +718,7 @@ class OtpVerificationScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Column(
                       children: [
@@ -748,13 +748,13 @@ class OtpVerificationScreen extends StatelessWidget {
                                 const Text(
                                   'Verify OTP',
                                   style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 8.0),
                                 Text(
                                   'A verification OTP has been sent to\n$email.',
                                   style: const TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 28.0),
 
@@ -954,7 +954,7 @@ class ResetPasswordScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Column(
                       children: [
@@ -984,13 +984,13 @@ class ResetPasswordScreen extends StatelessWidget {
                                 const Text(
                                   'New Password',
                                   style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 8.0),
                                 const Text(
                                   'Set a strong, unique password to secure\nyour academic account.',
                                   style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B), height: 1.4),
-                                  textAlign: Center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 28.0),
 
