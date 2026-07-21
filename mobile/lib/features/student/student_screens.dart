@@ -3913,81 +3913,1346 @@ class StudentAttendanceScreen extends ConsumerWidget {
 }
 
 // ----------------------------------------------------
-// PLACEHOLDERS FOR REMAINING PORTAL SCREENS (COMPILE READY)
+// 8. SEMESTER RESULTS SCREEN (Screenshot 11)
 // ----------------------------------------------------
 class StudentResultsScreen extends StatelessWidget {
   const StudentResultsScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Exam Results'),
-      body: Center(child: Text('Results Sheets & Term Grades (Placeholder)', style: TextStyle(color: Theme.of(context).colorScheme.outline))),
-    );
-  }
-}
-
-class StudentCertificatesScreen extends StatelessWidget {
-  const StudentCertificatesScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'My Certificates'),
-      body: Center(child: Text('Course Completion Certificates (Placeholder)', style: TextStyle(color: Theme.of(context).colorScheme.outline))),
-    );
-  }
-}
-
-class StudentPaymentsScreen extends StatelessWidget {
-  const StudentPaymentsScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'Fee Invoices & Payments'),
-      body: Center(child: Text('Payments Ledger & Invoices (Placeholder)', style: TextStyle(color: Theme.of(context).colorScheme.outline))),
-    );
-  }
-}
-
-class StudentNotificationsScreen extends StatelessWidget {
-  const StudentNotificationsScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'Notifications'),
-      body: Center(child: Text('Board Notices & Alerts (Placeholder)', style: TextStyle(color: Theme.of(context).colorScheme.outline))),
-    );
-  }
-}
-
-class StudentProfileScreen extends ConsumerWidget {
-  const StudentProfileScreen({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: 'My Profile', showBackButton: false),
-      body: Padding(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'Tech Academy',
+          style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.w800, fontSize: 18.0),
+        ),
+        centerTitle: true,
+        actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 14,
+              backgroundImage: NetworkImage(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuARMnA0U7WgcUnlA6fXP500re2M9K1O6jMHW6gW8NsJuh9MN20BkPdcWifkjmgSpvcinY73-_Nwgcv-WTehLsCgAY_QCcPi4vTdJJyBOAhgD5pk5dP49LBpmLmxlySvQ46Pq5bzJNFe65kgkK-cdMStJPDQXWOnggKfTzWTJpzyWQq_7fBYvItRQhXaryKouAlyXU5BNGuuJXXn9Z20WQ3HvrMESry5phreZ-4YqdG-R3vd9TNRfHTeQBeH_Aai2GchXFG6fX2xD94I',
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const ProfileCard(
-              name: 'Rahul Sharma',
-              email: 'student@laxmi.com',
-              idLabel: 'Roll Number',
-              idValue: 'STU-2026-001',
+            const Text(
+              'Semester 4 Results',
+              style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
             ),
-            const SizedBox(height: 32.0),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Academic Year 2023-24 \u2022 Computer Science Engineering',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 16.0),
+
+            // CGPA Score Banner
+            Container(
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFF005C9E),
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: Column(
+                children: [
+                  const Text('CURRENT CGPA', style: TextStyle(fontSize: 11.0, color: Colors.white70, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                  const SizedBox(height: 6.0),
+                  const Text('8.92', style: TextStyle(fontSize: 36.0, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 12.0),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.16), borderRadius: BorderRadius.circular(12.0)),
+                        child: const Text('SGPA: 9.10', style: TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 14.0),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.16), borderRadius: BorderRadius.circular(12.0)),
+                        child: const Text('Rank: 12/120', style: TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16.0),
+
+            // Performance Trend Card Placeholder
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Performance Trend', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                        Row(
+                          children: [
+                            Container(width: 8.0, height: 8.0, decoration: const BoxDecoration(color: Color(0xFF005C9E), shape: BoxShape.circle)),
+                            const SizedBox(width: 6.0),
+                            const Text('GPA per Semester', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 100.0), // height for simulator space
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: const [
+                        Text('Sem 1', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                        Text('Sem 2', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                        Text('Sem 3', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                        Text('Sem 4', style: TextStyle(fontSize: 11.5, color: Color(0xFF005C9E), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16.0),
+
             CustomButton(
-              text: 'Log Out',
-              backgroundColor: Theme.of(context).colorScheme.error,
-              textColor: Theme.of(context).colorScheme.onError,
-              onPressed: () async {
-                await ref.read(authNotifierProvider.notifier).logout();
-                if (context.mounted) {
-                  context.go('/login');
-                }
-              },
+              text: 'Download Marksheet (PDF)',
+              backgroundColor: const Color(0xFF005C9E),
+              onPressed: () {},
             ),
+            
+            const SizedBox(height: 16.0),
+
+            // Overview Section
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Overview', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const Divider(color: Color(0xFFE2E8F0), height: 24.0),
+                    _buildOverviewRow('Attendance', '94%'),
+                    const SizedBox(height: 12.0),
+                    _buildOverviewRow('Credits Earned', '24 / 24'),
+                    const SizedBox(height: 12.0),
+                    _buildOverviewRow('Arrears', 'None', valueColor: Colors.blue),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16.0),
+
+            // Detailed Subject Performance Section
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Detailed Subject\nPerformance', style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12.0)),
+                          child: const Text('Major Subjects', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Color(0xFFE2E8F0), height: 24.0),
+                    // Table Header
+                    Row(
+                      children: const [
+                        Expanded(flex: 5, child: Text('SUBJECT\nCODE & NAME', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold))),
+                        Expanded(flex: 3, child: Text('INTERNAL\n(30)', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                        Expanded(flex: 3, child: Text('EXTERNAL\n(70)', style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                      ],
+                    ),
+                    const SizedBox(height: 12.0),
+                    _buildGradeRow('CS401:\nAdvanced Algorithms\nCore Computer Science', '28', '64'),
+                    _buildGradeRow('CS402:\nDatabase Management Systems\nInformation Architecture', '26', '61'),
+                    _buildGradeRow('CS403:\nOperating Systems\nSystems Programming', '29', '66'),
+                    _buildGradeRow('CS404:\nSoftware Engineering Methodologies\n& Design', '24', '58'),
+                    _buildGradeRow('MA410:\nDiscrete Mathematics\nApplied Mathematics', '27', '63'),
+                    const SizedBox(height: 16.0),
+                    Center(
+                      child: Text(
+                        'Note: All marks shown are final. For re-evaluation, please contact the academic office by end of the week.',
+                        style: TextStyle(fontSize: 11.5, color: Colors.grey.shade400),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 48.0),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewRow(String label, String value, {Color? valueColor}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        Text(value, style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold, color: valueColor ?? const Color(0xFF0F172A))),
+      ],
+    );
+  }
+
+  Widget _buildGradeRow(String title, String internal, String external) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFF1F5F9)))),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: Text(title, style: const TextStyle(fontSize: 12.0, fontWeight: FontWeight.w600, color: Color(0xFF0F172A), height: 1.35)),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(internal, style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF475569)), textAlign: TextAlign.center),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(external, style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold, color: Color(0xFF475569)), textAlign: TextAlign.center),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 9. MY CERTIFICATES SCREEN (Screenshot 12)
+// ----------------------------------------------------
+class StudentCertificatesScreen extends StatelessWidget {
+  const StudentCertificatesScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'Tech Academy',
+          style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.w800, fontSize: 18.0),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Color(0xFF0F172A)),
+            onPressed: () {},
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 14,
+              backgroundImage: NetworkImage(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuARMnA0U7WgcUnlA6fXP500re2M9K1O6jMHW6gW8NsJuh9MN20BkPdcWifkjmgSpvcinY73-_Nwgcv-WTehLsCgAY_QCcPi4vTdJJyBOAhgD5pk5dP49LBpmLmxlySvQ46Pq5bzJNFe65kgkK-cdMStJPDQXWOnggKfTzWTJpzyWQq_7fBYvItRQhXaryKouAlyXU5BNGuuJXXn9Z20WQ3HvrMESry5phreZ-4YqdG-R3vd9TNRfHTeQBeH_Aai2GchXFG6fX2xD94I',
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'My Certificates',
+              style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Showcase your verified achievements and credentials.',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 16.0),
+
+            // Statistics Row Cards
+            SizedBox(
+              height: 72.0,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildStatBox(Icons.workspace_premium, 'TOTAL EARNED', '12'),
+                  _buildStatBox(Icons.history_edu, 'IN PROGRESS', '3'),
+                  _buildStatBox(Icons.verified, 'VERIFICATIONS', '48'),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24.0),
+
+            // Certificate Item 1
+            _buildCertificateCard(
+              context,
+              badge: 'ADVANCED',
+              date: 'June 12, 2021',
+              title: 'Advanced Web Development',
+              tags: ['React.js', 'Node.js'],
+              imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDxwA6hJcaDrniWKSWspyJHRyIP_QbgFu_gJx5yt7wnlBjm3BUhi1E5mEli_By2b4zboSH-qQ7I5DGtZii3RV8dLe44_tG1yGRP3OWkljBsujkb-U3PjGxC5NH9uh932HLOXI6VDF0ASNAkhy32t1RQBUKktt-a7UsToaNi4vd6HvnHYUGkad6MDSafekG9hDc1vXAgTy6CGhIJFj7IEQ_Yx95wWW7tixY25dccjOzrC2ic0m8hFQ0x6nGG4PFcNCgj4R_fcsQ8ZmaH',
+            ),
+            const SizedBox(height: 16.0),
+
+            // Certificate Item 2
+            _buildCertificateCard(
+              context,
+              badge: 'PROFESSIONAL',
+              date: 'April 05, 2024',
+              title: 'Python for Data Science',
+              tags: ['NumPy', 'Pandas'],
+              imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAyuQS9JpkRiEURqAExqyf9RwAz61xGess61Tt0gaRxOGf02kdqqQI0wr3ING71sB3DAAvFbBRLr1Dy50jdn6m-04p05USBvDETcf--7srWbB90QXcd_nUdmLOSLM6RFkFIcdA7upxsmHUU0gxD_L7cuVnEZXlMkh8yDDm6K6qCO8_lQDTGrmM_DjmXaKITD7O1bADo_miHrJ0kMAGEslDd2GdgAGRbYSQ6q951dFdCZhIlkvwrvs9z8_Eo816fpf0jUROIa3SIdNgi',
+            ),
+            const SizedBox(height: 16.0),
+
+            // Certificate Item 3
+            _buildCertificateCard(
+              context,
+              badge: 'FOUNDATION',
+              date: 'February 20, 2024',
+              title: 'UI/UX Design Fundamentals',
+              tags: ['Figma', 'Prototyping'],
+              imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBwfVGQrnBDkybLOGtMG50XoM9-n_v-XAFJ7be_7vkWH_xaULvMLilfoFS-jEzAGGJ41M3cUcEcGxnA-ZyUo115yHSTuQP8Z6N8kFql7ZVxnAdY99iWA7sZyLzyNVvdo6a26jVl113mzpmF6DKBnngMAoiA8NsVjKXh_sTS3Bfd7hlym9GTKhybKW2S8jLJmfpje3qxudWz2gKAud9lS7BKNWVh7gLDogDUQ2lNOAY_TzmI0RbOcXpwvbogz6ap22kplXMFLJHO34EF',
+            ),
+            
+            const SizedBox(height: 24.0),
+
+            // Verification History
+            const Text(
+              'Verification History',
+              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 12.0),
+
+            Container(
+              decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(12.0)),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                    decoration: const BoxDecoration(color: Color(0xFFF8FAFC), borderRadius: BorderRadius.vertical(top: Radius.circular(12.0))),
+                    child: Row(
+                      children: const [
+                        Expanded(flex: 4, child: Text('Verifier / Organization', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B), fontWeight: FontWeight.bold))),
+                        Expanded(flex: 5, child: Text('Certificate', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B), fontWeight: FontWeight.bold))),
+                      ],
+                    ),
+                  ),
+                  _buildHistoryRow('Google Talent Solutions', 'Advanced Web Development'),
+                  _buildHistoryRow('LinkedIn Profile Import', 'Python for Data Science'),
+                  _buildHistoryRow('MIT Open Courseware', 'UI/UX Design Fundamentals'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 48.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatBox(IconData icon, String label, String value) {
+    return Container(
+      width: 140.0,
+      margin: const EdgeInsets.only(right: 12.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color(0xFFE8F2FF),
+            child: Icon(icon, color: const Color(0xFF005C9E), size: 18.0),
+          ),
+          const SizedBox(width: 10.0),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 8.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                Text(value, style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCertificateCard(BuildContext context,
+      {required String badge, required String date, required String title, required List<String> tags, required String imageUrl}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
+                child: Image.network(
+                  imageUrl,
+                  height: 120.0,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  decoration: BoxDecoration(color: const Color(0xFF005C9E), borderRadius: BorderRadius.circular(6.0)),
+                  child: Text(
+                    badge,
+                    style: const TextStyle(fontSize: 9.0, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(date, style: const TextStyle(fontSize: 12.0, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4.0),
+                Text(title, style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                const SizedBox(height: 8.0),
+                Row(
+                  children: tags.map((t) {
+                    return Container(
+                      margin: const EdgeInsets.only(right: 8.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                      decoration: const BoxDecoration(color: Color(0xFFF1F5F9), borderRadius: BorderRadius.all(Radius.circular(6.0))),
+                      child: Text(t, style: const TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16.0),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 38.0,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF005C9E),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.download, size: 16.0),
+                          label: const Text('Download PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                          onPressed: () {},
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12.0),
+                    Container(
+                      height: 38.0,
+                      width: 44.0,
+                      decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(8.0)),
+                      child: IconButton(
+                        icon: const Icon(Icons.share_outlined, size: 18.0, color: Color(0xFF64748B)),
+                        onPressed: () {},
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryRow(String org, String cert) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 14.0),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Row(
+              children: [
+                const Icon(Icons.verified_outlined, size: 16.0, color: Color(0xFF005C9E)),
+                const SizedBox(width: 8.0),
+                Expanded(child: Text(org, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)))),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 5,
+            child: Text(cert, style: const TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 10. FEE PAYMENTS SCREEN (Screenshot 13)
+// ----------------------------------------------------
+class StudentPaymentsScreen extends StatelessWidget {
+  const StudentPaymentsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'Tech Academy',
+          style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.w800, fontSize: 18.0),
+        ),
+        centerTitle: true,
+        actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 14,
+              backgroundImage: NetworkImage(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuARMnA0U7WgcUnlA6fXP500re2M9K1O6jMHW6gW8NsJuh9MN20BkPdcWifkjmgSpvcinY73-_Nwgcv-WTehLsCgAY_QCcPi4vTdJJyBOAhgD5pk5dP49LBpmLmxlySvQ46Pq5bzJNFe65kgkK-cdMStJPDQXWOnggKfTzWTJpzyWQq_7fBYvItRQhXaryKouAlyXU5BNGuuJXXn9Z20WQ3HvrMESry5phreZ-4YqdG-R3vd9TNRfHTeQBeH_Aai2GchXFG6fX2xD94I',
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Fee Payments',
+              style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            ),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Manage your tuition fees, view transaction history, and download receipts.',
+              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 16.0),
+
+            // Hero balance card
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('FEE OVERVIEW - ACADEMIC YEAR 2024', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                    const SizedBox(height: 16.0),
+                    const Text('Pending Balance', style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+                    const SizedBox(height: 2.0),
+                    const Text('₹45,500.00', style: TextStyle(fontSize: 28.0, fontWeight: FontWeight.bold, color: Colors.red)),
+                    const SizedBox(height: 16.0),
+                    const Text('Total Fees Paid', style: TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+                    const SizedBox(height: 2.0),
+                    const Text('₹1,20,000.00', style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF005C9E))),
+                    const SizedBox(height: 16.0),
+                    Row(
+                      children: const [
+                        Icon(Icons.check_circle_outline, color: Colors.blue, size: 18.0),
+                        SizedBox(width: 8.0),
+                        Expanded(
+                          child: Text(
+                            'Course: Full Stack Development (Masters)',
+                            style: TextStyle(fontSize: 13.0, color: Color(0xFF475569), fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20.0),
+                    SizedBox(
+                      height: 44.0,
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF005C9E),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                          elevation: 0,
+                        ),
+                        onPressed: () {},
+                        child: const Text('Pay Now  Razorpay', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16.0),
+
+            // Payment progress install counts
+            Card(
+              elevation: 0,
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('Payment Progress', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const SizedBox(height: 8.0),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text('72% Completed', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+                        Text('3 of 4 Installments', style: TextStyle(fontSize: 12.0, color: Color(0xFF005C9E), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4.0),
+                      child: const LinearProgressIndicator(
+                        value: 0.72,
+                        minHeight: 5.0,
+                        backgroundColor: Color(0xFFF1F5F9),
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF005C9E)),
+                      ),
+                    ),
+                    const SizedBox(height: 12.0),
+                    const Text(
+                      "Great job! You're on track with your academic financial plan.",
+                      style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24.0),
+
+            // Upcoming Dues
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text('Upcoming Dues', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                Text('Next Due: Oct 15', style: TextStyle(fontSize: 12.0, color: Colors.red, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 12.0),
+
+            _buildDueItem(title: 'Semester 3 - Installment 2', amount: '₹22,750', due: 'Due Oct 15, 2024', icon: Icons.schedule),
+            const SizedBox(height: 10.0),
+            _buildDueItem(title: 'Semester 3 - Installment 3', amount: '₹22,750', due: 'Due Dec 15, 2024', icon: Icons.calendar_month),
+            
+            const SizedBox(height: 24.0),
+
+            // Payment History
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Payment History', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                TextButton(
+                  onPressed: () {},
+                  child: Row(
+                    children: const [
+                      Text('Export All ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.0)),
+                      Icon(Icons.download, size: 14.0),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12.0),
+
+            Container(
+              decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(12.0)),
+              child: Column(
+                children: [
+                  _buildHistoryHeader(),
+                  _buildHistoryRowItem('#TXN-99821', 'Aug 12, 2024', '₹40,000'),
+                  _buildHistoryRowItem('#TXN-99450', 'Jun 05, 2024', '₹40,000'),
+                  _buildHistoryRowItem('#TXN-98122', 'Mar 20, 2024', '₹40,000'),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16.0),
+            Center(
+              child: TextButton(
+                onPressed: () {},
+                child: const Text('View All Transactions', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+            
+            const SizedBox(height: 24.0),
+
+            // Footers trust badges
+            Column(
+              children: [
+                _buildTrustLabel(Icons.lock_outline, 'SECURE 256-BIT SSL ENCRYPTION'),
+                const SizedBox(height: 8.0),
+                _buildTrustLabel(Icons.verified_user_outlined, 'PCI DSS COMPLIANT INFRASTRUCTURE'),
+                const SizedBox(height: 8.0),
+                _buildTrustLabel(Icons.shield_outlined, 'IDENTITY VERIFIED'),
+              ],
+            ),
+            const SizedBox(height: 48.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDueItem({required String title, required String amount, required String due, required IconData icon}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFE8F2FF),
+              child: Icon(icon, color: const Color(0xFF005C9E), size: 18.0),
+            ),
+            const SizedBox(width: 14.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  const SizedBox(height: 3.0),
+                  Text(due, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                ],
+              ),
+            ),
+            Text(amount, style: const TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+      decoration: const BoxDecoration(color: Color(0xFFF8FAFC), borderRadius: BorderRadius.vertical(top: Radius.circular(12.0))),
+      child: Row(
+        children: const [
+          Expanded(flex: 3, child: Text('Transaction ID', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold))),
+          Expanded(flex: 3, child: Text('Date', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold))),
+          Expanded(flex: 3, child: Text('Amount', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold))),
+          Expanded(flex: 2, child: Text('Receipt', style: TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryRowItem(String id, String date, String amount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 14.0),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text(id, style: const TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)))),
+          Expanded(flex: 3, child: Text(date, style: const TextStyle(fontSize: 12.0, color: Color(0xFF64748B)))),
+          Expanded(flex: 3, child: Text(amount, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)))),
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.download, size: 18.0, color: Color(0xFF005C9E)),
+                onPressed: () {},
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrustLabel(IconData icon, String label) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14.0, color: const Color(0xFF94A3B8)),
+        const SizedBox(width: 6.0),
+        Text(label, style: const TextStyle(fontSize: 9.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+      ],
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 11. ALERTS & NOTIFICATIONS SCREEN (Screenshot 14)
+// ----------------------------------------------------
+class StudentNotificationsScreen extends StatelessWidget {
+  const StudentNotificationsScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'Tech Academy',
+          style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.w800, fontSize: 18.0),
+        ),
+        centerTitle: true,
+        actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 14,
+              backgroundImage: NetworkImage(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuARMnA0U7WgcUnlA6fXP500re2M9K1O6jMHW6gW8NsJuh9MN20BkPdcWifkjmgSpvcinY73-_Nwgcv-WTehLsCgAY_QCcPi4vTdJJyBOAhgD5pk5dP49LBpmLmxlySvQ46Pq5bzJNFe65kgkK-cdMStJPDQXWOnggKfTzWTJpzyWQq_7fBYvItRQhXaryKouAlyXU5BNGuuJXXn9Z20WQ3HvrMESry5phreZ-4YqdG-R3vd9TNRfHTeQBeH_Aai2GchXFG6fX2xD94I',
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Notifications',
+                  style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                ),
+                const SizedBox(height: 4.0),
+                const Text(
+                  'Stay updated with your latest academic activities and alerts.',
+                  style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 16.0),
+
+                // Mark all read button
+                SizedBox(
+                  height: 38.0,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF005C9E),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+                    ),
+                    icon: const Icon(Icons.done_all, size: 16.0),
+                    label: const Text('Mark all as read', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.0)),
+                    onPressed: () {},
+                  ),
+                ),
+                
+                const SizedBox(height: 24.0),
+
+                // Section: Critical Alerts
+                Row(
+                  children: [
+                    const Icon(Icons.warning_amber_outlined, color: Colors.red, size: 18.0),
+                    const SizedBox(width: 6.0),
+                    const Text('Critical Alerts', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                    const SizedBox(width: 8.0),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+                      decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4.0)),
+                      child: const Text('2 NEW', style: TextStyle(fontSize: 9.0, fontWeight: FontWeight.bold, color: Colors.red)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+
+                _buildAlertBox(
+                  title: 'Exam Rescheduled',
+                  time: '10m ago',
+                  desc: 'The "Advanced Algorithms" mid-term exam has been moved from Room 402 to the Grand Auditorium due to capacity requirements.',
+                  buttonText: 'View New Schedule',
+                  icon: Icons.error_outline,
+                ),
+                const SizedBox(height: 12.0),
+                _buildAlertBox(
+                  title: 'Payment Due Reminder',
+                  time: '2h ago',
+                  desc: 'Your tuition installment for Semester 2 is due in 48 hours. Please ensure your payment method is valid to avoid late fees.',
+                  buttonText: 'Pay Now',
+                  icon: Icons.payment,
+                ),
+                
+                const SizedBox(height: 24.0),
+
+                // Section: Campus Announcements
+                Row(
+                  children: const [
+                    Icon(Icons.campaign_outlined, color: Color(0xFF005C9E), size: 18.0),
+                    SizedBox(width: 6.0),
+                    Text('Campus Announcements', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+
+                Card(
+                  elevation: 0,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: const Color(0xFFE8F2FF),
+                              child: Icon(Icons.campaign, color: theme.colorScheme.primary, size: 18.0),
+                            ),
+                            const SizedBox(width: 12.0),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Tech Academy Hackathon 2024', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                                  SizedBox(height: 2.0),
+                                  Text('Yesterday', style: TextStyle(fontSize: 11.0, color: Color(0xFF64748B))),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Registration is now open for the annual 48-hour coding marathon. Over \$5,000 in prizes and internship opportunities with top tech firms.',
+                              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.4),
+                            ),
+                            const SizedBox(height: 12.0),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8.0),
+                              child: Image.network(
+                                'https://lh3.googleusercontent.com/aida-public/AB6AXuCCfmrE-1jgZinp1e9XXf8Mo9gfR-8SeYx5SJWKIaW5zNKt93HtIR3mkUmoRGlIKPMu0RUYzJ2XcpjFKNWGhWk2zKGauofOaU6Cjhlqu3gHTdVufT4oprmGpxYm0gHeQUPJDZn4fsvMyO9G5QG7bE2YmGYcHlwFt4SPiyE1VptH8UVBPEVM6_Q6Jxnd3fNFqQ_2FViUevRdqUGGIjJp154tnwJhJSBU9z6PRoR36sruXy_hwKN5yu_zcllyyvnrlJyWSC8P0hUCFBNv',
+                                height: 120.0,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 12.0),
+                            TextButton(
+                              onPressed: () {},
+                              child: const Text('Read Registration Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.0)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24.0),
+
+                // Section: Academic Notices
+                Row(
+                  children: const [
+                    Icon(Icons.info_outline, color: Color(0xFF64748B), size: 18.0),
+                    SizedBox(width: 6.0),
+                    Text('Academic Notices', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ],
+                ),
+                const SizedBox(height: 12.0),
+
+                _buildNoticeTile(
+                  tag: 'COURSEWORK',
+                  title: 'Assignment Graded',
+                  desc: 'Database Systems: Normalization Practice has been graded. You received 94/100.',
+                  date: 'Aug 12',
+                  icon: Icons.description_outlined,
+                ),
+                const SizedBox(height: 12.0),
+                _buildNoticeTile(
+                  tag: 'LIBRARY',
+                  title: 'Book Return Confirmation',
+                  desc: '"The Pragmatic Programmer" was successfully returned to the Central Library today.',
+                  date: 'Aug 11',
+                  icon: Icons.menu_book,
+                ),
+                
+                const SizedBox(height: 36.0),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.history, size: 16.0, color: Color(0xFF94A3B8)),
+                    SizedBox(width: 6.0),
+                    Text('Viewing older notifications from the last 30 days', style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8))),
+                  ],
+                ),
+                const SizedBox(height: 80.0),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: FloatingActionButton(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              onPressed: () {},
+              child: const Icon(Icons.add, size: 28.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertBox({required String title, required String time, required String desc, required String buttonText, required IconData icon}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            width: 4.0,
+            child: Container(color: Colors.red),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.red.shade50,
+                          child: Icon(icon, color: Colors.red, size: 16.0),
+                        ),
+                        const SizedBox(width: 8.0),
+                        Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      ],
+                    ),
+                    Text(time, style: const TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 10.0),
+                Text(desc, style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B), height: 1.4)),
+                const SizedBox(height: 12.0),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE8F2FF),
+                      foregroundColor: const Color(0xFF005C9E),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 8.0),
+                    ),
+                    onPressed: () {},
+                    child: Text(buttonText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.0)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoticeTile({required String tag, required String title, required String desc, required String date, required IconData icon}) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0), side: const BorderSide(color: Color(0xFFE2E8F0))),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFF1F5F9),
+              child: Icon(icon, color: const Color(0xFF64748B), size: 18.0),
+            ),
+            const SizedBox(width: 12.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tag,
+                    style: const TextStyle(fontSize: 9.0, fontWeight: FontWeight.bold, color: Color(0xFF64748B), letterSpacing: 0.5),
+                  ),
+                  const SizedBox(height: 2.0),
+                  Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  const SizedBox(height: 2.0),
+                  Text(desc, style: const TextStyle(fontSize: 12.0, color: Color(0xFF64748B))),
+                  const SizedBox(height: 6.0),
+                  Text(date, style: const TextStyle(fontSize: 11.0, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 14.0, color: Color(0xFFCBD5E1)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 12. MY PROFILE / SETTINGS SCREEN (Screenshot 15)
+// ----------------------------------------------------
+class StudentProfileScreen extends ConsumerWidget {
+  const StudentProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Color(0xFF0F172A)),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'Tech Academy',
+          style: TextStyle(color: Color(0xFF005C9E), fontWeight: FontWeight.w800, fontSize: 18.0),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Avatar with edit pen overlay
+            Center(
+              child: Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4.0),
+                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: const Color(0xFF005C9E), width: 2.0)),
+                    child: const CircleAvatar(
+                      radius: 54,
+                      backgroundImage: NetworkImage(
+                        'https://lh3.googleusercontent.com/aida-public/AB6AXuARMnA0U7WgcUnlA6fXP500re2M9K1O6jMHW6gW8NsJuh9MN20BkPdcWifkjmgSpvcinY73-_Nwgcv-WTehLsCgAY_QCcPi4vTdJJyBOAhgD5pk5dP49LBpmLmxlySvQ46Pq5bzJNFe65kgkK-cdMStJPDQXWOnggKfTzWTJpzyWQq_7fBYvItRQhXaryKouAlyXU5BNGuuJXXn9Z20WQ3HvrMESry5phreZ-4YqdG-R3vd9TNRfHTeQBeH_Aai2GchXFG6fX2xD94I',
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 4,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color(0xFF005C9E),
+                      child: IconButton(
+                        icon: const Icon(Icons.edit, size: 14.0, color: Colors.white),
+                        onPressed: () {},
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16.0),
+            
+            // Student Profile info tags
+            const Text(
+              'Alex Rivera',
+              style: TextStyle(fontSize: 22.0, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4.0),
+            const Text(
+              'Roll Number: 20240812',
+              style: TextStyle(fontSize: 13.0, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10.0),
+            
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildRosterTag('Computer Science'),
+                const SizedBox(width: 8.0),
+                _buildRosterTag('Year 2'),
+              ],
+            ),
+            const SizedBox(height: 28.0),
+
+            // Account settings list tiles
+            const Text('ACCOUNT SETTINGS', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            const SizedBox(height: 8.0),
+            _buildActionTile(Icons.person_outline, 'Personal Info', 'Update your name and contact details'),
+            _buildActionTile(Icons.school_outlined, 'Academic Details', 'View grades, credits, and schedule'),
+            
+            const SizedBox(height: 24.0),
+
+            // Preferences list tiles
+            const Text('PREFERENCES', style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            const SizedBox(height: 8.0),
+            _buildActionTile(Icons.edit_note, 'Edit Profile', null),
+            _buildDarkModeTile(),
+            _buildActionTile(Icons.g_translate_outlined, 'Language', 'English (US)'),
+            _buildActionTile(Icons.lock_person_outlined, 'Security', 'Password, biometric, and 2FA'),
+            
+            const SizedBox(height: 24.0),
+            
+            // Logout button
+            Card(
+              elevation: 0,
+              color: Colors.red.shade50,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                onTap: () async {
+                  await ref.read(authNotifierProvider.notifier).logout();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 48.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRosterTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+      decoration: BoxDecoration(color: const Color(0xFFE8F2FF), borderRadius: BorderRadius.circular(12.0)),
+      child: Text(label, style: const TextStyle(fontSize: 11.5, color: Color(0xFF005C9E), fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildActionTile(IconData icon, String title, String? desc) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10.0),
+      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(10.0)),
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 18,
+          backgroundColor: const Color(0xFFF1F5F9),
+          child: Icon(icon, color: const Color(0xFF005C9E), size: 18.0),
+        ),
+        title: Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        subtitle: desc != null ? Text(desc, style: const TextStyle(fontSize: 12.0, color: Color(0xFF64748B))) : null,
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14.0, color: Color(0xFFCBD5E1)),
+        onTap: () {},
+      ),
+    );
+  }
+
+  Widget _buildDarkModeTile() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10.0),
+      decoration: BoxDecoration(color: Colors.white, border: Border.all(color: const Color(0xFFE2E8F0)), borderRadius: BorderRadius.circular(10.0)),
+      child: ListTile(
+        leading: const CircleAvatar(
+          radius: 18,
+          backgroundColor: Color(0xFFF1F5F9),
+          child: Icon(Icons.wb_sunny_outlined, color: Color(0xFF005C9E), size: 18.0),
+        ),
+        title: const Text('Dark Mode', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        trailing: Switch(
+          value: false,
+          activeColor: const Color(0xFF005C9E),
+          onChanged: (val) {},
         ),
       ),
     );

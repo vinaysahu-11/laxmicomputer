@@ -54,6 +54,7 @@ class AppRouter {
               return StudentShell(navigationShell: navigationShell);
             },
             branches: [
+              // Branch 0: Home / Dashboard
               StatefulShellBranch(
                 navigatorKey: _studentShellNavigatorKey,
                 routes: [
@@ -61,12 +62,7 @@ class AppRouter {
                     path: '/student',
                     builder: (context, state) => const StudentDashboardScreen(),
                     routes: [
-                      // Sub-pages pushed onto root navigation
-                      GoRoute(
-                        path: 'courses',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentCoursesScreen(),
-                      ),
+                      // Sub-pages pushed onto root navigation (to hide bottom bar when wanted)
                       GoRoute(
                         path: 'courses/details',
                         parentNavigatorKey: _rootNavigatorKey,
@@ -74,11 +70,6 @@ class AppRouter {
                           final title = state.uri.queryParameters['title'] ?? 'Course Details';
                           return StudentCourseDetailsScreen(title: title);
                         },
-                      ),
-                      GoRoute(
-                        path: 'classes',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentClassesScreen(),
                       ),
                       GoRoute(
                         path: 'materials',
@@ -105,25 +96,29 @@ class AppRouter {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) => const StudentAttendanceScreen(),
                       ),
-                      GoRoute(
-                        path: 'results',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentResultsScreen(),
-                      ),
-                      GoRoute(
-                        path: 'certificates',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentCertificatesScreen(),
-                      ),
-                      GoRoute(
-                        path: 'payments',
-                        parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentPaymentsScreen(),
-                      ),
                     ],
                   ),
                 ],
               ),
+              // Branch 1: Courses
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/student/courses',
+                    builder: (context, state) => const StudentCoursesScreen(),
+                  ),
+                ],
+              ),
+              // Branch 2: Classes
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/student/classes',
+                    builder: (context, state) => const StudentClassesScreen(),
+                  ),
+                ],
+              ),
+              // Branch 3: Alerts / Notifications
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -132,6 +127,7 @@ class AppRouter {
                   ),
                 ],
               ),
+              // Branch 4: Profile
               StatefulShellBranch(
                 routes: [
                   GoRoute(
@@ -140,15 +136,40 @@ class AppRouter {
                   ),
                 ],
               ),
+              // Branch 5: Results
               StatefulShellBranch(
                 routes: [
                   GoRoute(
-                    path: '/student/settings',
-                    builder: (context, state) => const StudentSettingsScreen(),
+                    path: '/student/results',
+                    builder: (context, state) => const StudentResultsScreen(),
+                  ),
+                ],
+              ),
+              // Branch 6: Certificates
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/student/certificates',
+                    builder: (context, state) => const StudentCertificatesScreen(),
+                  ),
+                ],
+              ),
+              // Branch 7: Payments
+              StatefulShellBranch(
+                routes: [
+                  GoRoute(
+                    path: '/student/payments',
+                    builder: (context, state) => const StudentPaymentsScreen(),
                   ),
                 ],
               ),
             ],
+          ),
+          // Settings route pushed on root navigator
+          GoRoute(
+            path: '/student/settings',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) => const StudentSettingsScreen(),
           ),
 
           // Teacher Branch Shell Routes
