@@ -89,7 +89,7 @@ class AppRouter {
                       GoRoute(
                         path: 'exams',
                         parentNavigatorKey: _rootNavigatorKey,
-                        builder: (context, state) => const StudentExamsScreen(),
+                        builder: (context, state) => const StudentTestsScreen(),
                       ),
                       GoRoute(
                         path: 'attendance',
