@@ -16,6 +16,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  String _selectedRole = 'student';
 
   void _handleLogin(String role) async {
     final success = await ref.read(authNotifierProvider.notifier).login(
@@ -104,23 +105,99 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Role Selection Options
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() => _selectedRole = 'student'),
+                              child: Container(
+                                height: 42.0,
+                                decoration: BoxDecoration(
+                                  color: _selectedRole == 'student' ? const Color(0xFF005C9E) : Colors.white,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  border: Border.all(
+                                    color: _selectedRole == 'student' ? const Color(0xFF005C9E) : const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.school,
+                                      size: 16.0,
+                                      color: _selectedRole == 'student' ? Colors.white : const Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 8.0),
+                                    Text(
+                                      'Student',
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: _selectedRole == 'student' ? Colors.white : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12.0),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => setState(() => _selectedRole = 'teacher'),
+                              child: Container(
+                                height: 42.0,
+                                decoration: BoxDecoration(
+                                  color: _selectedRole == 'teacher' ? const Color(0xFF005C9E) : Colors.white,
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  border: Border.all(
+                                    color: _selectedRole == 'teacher' ? const Color(0xFF005C9E) : const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.co_present,
+                                      size: 16.0,
+                                      color: _selectedRole == 'teacher' ? Colors.white : const Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 8.0),
+                                    Text(
+                                      'Teacher',
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: _selectedRole == 'teacher' ? Colors.white : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24.0),
+
                       // Underlined Email Input field
                       TextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email or Student ID',
-                          labelStyle: TextStyle(
+                        decoration: InputDecoration(
+                          labelText: _selectedRole == 'student' ? 'Email or Student ID' : 'Email or Teacher ID',
+                          labelStyle: const TextStyle(
                             color: Color(0xFF64748B),
                             fontSize: 14.0,
                           ),
-                          enabledBorder: UnderlineInputBorder(
+                          enabledBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
                           ),
-                          focusedBorder: UnderlineInputBorder(
+                          focusedBorder: const UnderlineInputBorder(
                             borderSide: BorderSide(color: Color(0xFF0066AE), width: 2.0),
                           ),
-                          contentPadding: EdgeInsets.symmetric(vertical: 8.0),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
                         ),
                       ),
                       const SizedBox(height: 20.0),
@@ -206,22 +283,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         text: 'Login',
                         isLoading: authState.isLoading,
                         backgroundColor: const Color(0xFF005C9E),
-                        onPressed: () => _handleLogin('student'),
+                        onPressed: () => _handleLogin(_selectedRole),
                       ),
                       const SizedBox(height: 10.0),
-                      GestureDetector(
-                        onTap: () => _handleLogin('teacher'),
-                        child: Text(
-                          'Teacher login panel',
-                          style: TextStyle(
-                            fontSize: 12.0,
-                            color: theme.colorScheme.primary.withOpacity(0.8),
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 20.0),
                       
                       // Divider OR
                       Row(
