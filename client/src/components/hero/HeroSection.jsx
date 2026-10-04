@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative overflow-hidden pt-20 pb-32 md:pt-32 md:pb-48 bg-gradient-to-br from-surface to-primary-fixed/20 scroll-reveal active">
       <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"></div>
@@ -18,12 +21,20 @@ const HeroSection = () => {
             Master the digital landscape with expert-led training in Web Development, Data Science, and Graphic Design. Empowering students since 2010.
           </p>
           <div className="flex flex-wrap gap-4 pt-4">
-            <button className="bg-primary text-on-primary px-8 py-4 rounded-lg font-headline-sm hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2">
+            <button 
+              onClick={() => navigate('/admission')}
+              className="bg-primary text-on-primary px-8 py-4 rounded-lg font-headline-sm hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2"
+            >
               Admission Now <span className="material-symbols-outlined">arrow_forward</span>
             </button>
-            <button className="bg-surface-container-lowest text-primary border border-primary/10 px-8 py-4 rounded-lg font-headline-sm hover:bg-primary-fixed/20 transition-all flex items-center gap-2">
+            <a 
+              href="https://wa.me/919876543210" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="bg-surface-container-lowest text-primary border border-primary/10 px-8 py-4 rounded-lg font-headline-sm hover:bg-primary-fixed/20 transition-all flex items-center gap-2"
+            >
               <span className="material-symbols-outlined">chat</span> WhatsApp
-            </button>
+            </a>
           </div>
           <div className="flex items-center gap-6 pt-stack-md text-on-surface-variant">
             <div className="flex -space-x-3">
@@ -55,8 +66,8 @@ const HeroSection = () => {
             />
             <div className="absolute bottom-6 left-6 right-6 glass-card p-6 rounded-xl flex items-center justify-between">
               <div>
-                <p className="font-label-sm text-primary uppercase">Next Batch</p>
-                <p className="font-headline-sm">October 15, 2024</p>
+                <p className="font-label-sm text-primary uppercase">New Admissions</p>
+                <p className="font-headline-sm">Open for 2025-2026 Batches</p>
               </div>
               <div className="bg-primary text-on-primary p-3 rounded-lg">
                 <span className="material-symbols-outlined">event</span>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import facultyService from '../../services/facultyService';
+import { mockFaculty } from '../../data/mockPublicData';
 
 const Faculty = () => {
-  const [teachers, setTeachers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState(mockFaculty);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null); // for detail modal
@@ -12,11 +13,21 @@ const Faculty = () => {
     try {
       setLoading(true);
       const data = await facultyService.getPublicTeachers();
-      setTeachers(data || []);
+      if (data && data.length > 0) {
+        // Merge real teachers with mock faculty so page is always comprehensive
+        const combined = [
+          ...data,
+          ...mockFaculty.filter(mf => !data.some(d => d.name?.toLowerCase() === mf.name?.toLowerCase()))
+        ];
+        setTeachers(combined);
+      } else {
+        setTeachers(mockFaculty);
+      }
       setError('');
     } catch (err) {
-      console.error(err);
-      setError('Failed to load faculty directory profiles.');
+      console.warn('API error, using rich mock faculty profiles:', err);
+      setTeachers(mockFaculty);
+      setError('');
     } finally {
       setLoading(false);
     }

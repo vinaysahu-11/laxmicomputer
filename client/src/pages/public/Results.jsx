@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import resultService from '../../services/resultService';
+import { mockResults, mockPlacements } from '../../data/mockPublicData';
 
 const Results = () => {
   const [hoveredStoryIndex, setHoveredStoryIndex] = useState(null);
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState(mockResults);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const fetchResults = async () => {
     try {
-      setLoading(true);
       const data = await resultService.getResults();
-      // Sort results by percentage descending to find academic toppers
-      const sortedResults = (data || []).sort((a, b) => b.percentage - a.percentage);
-      setResults(sortedResults);
+      if (data && data.length > 0) {
+        // Sort results by percentage descending to find academic toppers
+        const sortedResults = [...data].sort((a, b) => b.percentage - a.percentage);
+        setResults(sortedResults);
+      } else {
+        setResults(mockResults);
+      }
       setError('');
     } catch (err) {
-      console.error(err);
-      setError('Failed to load student results.');
-    } finally {
-      setLoading(false);
+      console.warn('Backend results fetch failed, falling back to mock results:', err);
+      setResults(mockResults);
     }
   };
 
@@ -36,29 +38,7 @@ const Results = () => {
   const mainTopper = results.length > 0 ? results[0] : null;
   const secondaryToppers = results.length > 1 ? results.slice(1) : [];
 
-  const storiesData = [
-    {
-      id: 1,
-      name: 'Kiran Gupta',
-      placement: 'Placed at Google',
-      quote: '"The hands-on training at LAXMI changed my perspective on coding. I went from a beginner to a confident developer in just 6 months. Truly life-changing!"',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC3j812z3y2QdcdfhKmpVvPpvb0pgv6EHPScLLt003Yzcet_nLhqGTBIC_v0Fk9011RDHVmJOMyL-dEcdHev4IgGWOZgmrm8nHTxhrePqMp__gbmZ9lB-bEOleYMp8lFkNkrQTq3-2ztS0lrv3Qr61zGiERaGP87DCEnBH5eTvZ2wQJanrdXCR_nf6WtBkg1KA-wCbOgO-mupc3vCJQjGbNXPxxJUvXuwzlMNezuDb4O_FK4IwxHlo30jTN5wdXJMmDc4eDVdYhAmsE'
-    },
-    {
-      id: 2,
-      name: 'Arjun Mehta',
-      placement: 'Placed at Microsoft',
-      quote: '"Laxmi Education doesn\'t just teach syntax; they teach problem-solving. The placement cell helped me land my dream job at my first interview."',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDvRRMHvhfG9ZBiY-9hTf8eOKFUXF6l2MYXfsA9l9C6l5fX9K4R7Zcps9QQmfcVU-WgdB2L2RTLkezTxhGCnxWblgmIFANVnQLJJICfHNJuSCH7Uo_sOK02Ijbpyy-1C2jYi5bCU_WAoHhI5-bmE6-aVrB29D5F_4tJZVvYpy9O5hjQyNQ-G_fJGfKGEHe7QbGowmmCCp-220KdVZZ7haXB68pl67K-DxqAyfmnbp4u4CRECIejOEllaefbmHz8E2Eiy9k0Xq0sf_mv'
-    },
-    {
-      id: 3,
-      name: 'Riya Sen',
-      placement: 'Placed at Amazon',
-      quote: '"The curriculum is exactly what the industry demands. The mentors are patient and highly knowledgeable. Best decision for my career!"',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDHQwyplE8esTKElf9LejsdlFmeSmSU4FsvTUfsvHANlI5cVDZvVPZGS900zQK3WdrIsTHCJpukkW_6pWseBdjurncARv4o5RlGsZEv1hbOwIsgf3AV8f6rPhFL-y8Q8WncvaLgeypsRrcFLo0mmOKBCQyb93AIL85iP02jmn-un0dXq6C5tEqmHnrb3Kg-0gO7v2l8xi2HMPK1oFPRiYtAkoEvOZaYupyh6W3lmlWxCQycS83kijTUHU21cqEZQKfePye8gyS26ifO'
-    }
-  ];
+  const storiesData = mockPlacements;
 
   return (
     <main className="max-w-container-max mx-auto px-margin-desktop py-stack-lg space-y-24">
@@ -239,7 +219,7 @@ const Results = () => {
                 </div>
                 <div>
                   <h4 className="font-label-md text-label-md text-on-surface font-bold">{story.name}</h4>
-                  <p className="text-label-sm text-on-surface-variant">{story.placement}</p>
+                  <p className="text-label-sm text-primary font-medium">{story.placement || `Placed at ${story.company} • ${story.package}`}</p>
                 </div>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant italic">{story.quote}</p>

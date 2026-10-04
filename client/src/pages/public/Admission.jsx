@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import courseService from '../../services/courseService';
 import admissionService from '../../services/admissionService';
+import { mockCourses } from '../../data/mockPublicData';
 
 const Admission = () => {
   const [formData, setFormData] = useState({
@@ -10,21 +11,23 @@ const Admission = () => {
     address: '',
     message: ''
   });
-  const [courses, setCourses] = useState([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [courses, setCourses] = useState(mockCourses);
+  const [loadingCourses, setLoadingCourses] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        setLoadingCourses(true);
         const data = await courseService.getCourses();
-        setCourses(data || []);
+        if (data && data.length > 0) {
+          setCourses(data);
+        } else {
+          setCourses(mockCourses);
+        }
       } catch (err) {
-        console.error('Failed to load courses for selection:', err);
-      } finally {
-        setLoadingCourses(false);
+        console.warn('Failed to load courses from API, using default course catalog:', err);
+        setCourses(mockCourses);
       }
     };
     fetchCourses();

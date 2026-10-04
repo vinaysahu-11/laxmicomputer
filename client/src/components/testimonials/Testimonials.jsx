@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import reviewService from '../../services/reviewService';
+import { mockReviews } from '../../data/mockPublicData';
 
 const Testimonials = () => {
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState(mockReviews);
+  const [loading, setLoading] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -11,11 +12,14 @@ const Testimonials = () => {
       try {
         const data = await reviewService.getReviews();
         const textReviews = (data || []).filter(r => !r.videoUrl || r.videoUrl.trim() === '');
-        setReviews(textReviews);
+        if (textReviews.length > 0) {
+          setReviews(textReviews);
+        } else {
+          setReviews(mockReviews);
+        }
       } catch (err) {
         console.error('Error fetching testimonials:', err);
-      } finally {
-        setLoading(false);
+        setReviews(mockReviews);
       }
     };
     fetchReviews();

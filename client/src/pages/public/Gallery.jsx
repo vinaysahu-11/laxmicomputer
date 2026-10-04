@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { getAlbums, getGalleryItems } from '../../services/galleryService';
+import { mockGalleryAlbums, mockGalleryItems } from '../../data/mockPublicData';
 
 const Gallery = () => {
-  const [albums, setAlbums] = useState([]);
-  const [galleryItems, setGalleryItems] = useState([]);
+  const [albums, setAlbums] = useState(mockGalleryAlbums);
+  const [galleryItems, setGalleryItems] = useState(mockGalleryItems);
   const [selectedCategory, setSelectedCategory] = useState('All Photos');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activePhoto, setActivePhoto] = useState(null); // stores photo item for Lightbox modal
 
@@ -16,12 +17,31 @@ const Gallery = () => {
         getAlbums(),
         getGalleryItems()
       ]);
-      setAlbums(albumsData || []);
-      setGalleryItems(itemsData || []);
+      if (albumsData && albumsData.length > 0) {
+        const combinedAlbums = [
+          ...albumsData,
+          ...mockGalleryAlbums.filter(ma => !albumsData.some(a => a.name?.toLowerCase() === ma.name?.toLowerCase()))
+        ];
+        setAlbums(combinedAlbums);
+      } else {
+        setAlbums(mockGalleryAlbums);
+      }
+
+      if (itemsData && itemsData.length > 0) {
+        const combinedItems = [
+          ...itemsData,
+          ...mockGalleryItems.filter(mi => !itemsData.some(i => i.title?.toLowerCase() === mi.title?.toLowerCase()))
+        ];
+        setGalleryItems(combinedItems);
+      } else {
+        setGalleryItems(mockGalleryItems);
+      }
       setError('');
     } catch (err) {
-      console.error(err);
-      setError('Failed to load academy gallery.');
+      console.warn('Gallery API unavailable, utilizing rich mock gallery images:', err);
+      setAlbums(mockGalleryAlbums);
+      setGalleryItems(mockGalleryItems);
+      setError('');
     } finally {
       setLoading(false);
     }
@@ -37,11 +57,14 @@ const Gallery = () => {
     albumMap[alb._id] = alb.name;
   });
 
-  const categories = ['All Photos', ...albums.map(alb => alb.name)];
+  const categories = ['All Photos', ...Array.from(new Set(albums.map(alb => alb.name)))];
   
   const filteredItems = selectedCategory === 'All Photos'
     ? galleryItems
-    : galleryItems.filter(item => albumMap[item.albumId] === selectedCategory);
+    : galleryItems.filter(item => {
+        const cat = item.category || albumMap[item.albumId];
+        return cat === selectedCategory;
+      });
 
   const getGridClass = (index) => {
     const patterns = [

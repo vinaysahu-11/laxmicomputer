@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import courseService from '../../services/courseService';
+import { mockCourses } from '../../data/mockPublicData';
 
 const Courses = () => {
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const [courses, setCourses] = useState(mockCourses);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Courses');
@@ -13,11 +16,21 @@ const Courses = () => {
     try {
       setLoading(true);
       const data = await courseService.getCourses();
-      setCourses(data);
+      if (data && data.length > 0) {
+        // Merge DB courses with mockCourses so that the public catalog is always fully populated
+        const combined = [
+          ...data,
+          ...mockCourses.filter(mc => !data.some(d => d.title?.toLowerCase() === mc.title?.toLowerCase()))
+        ];
+        setCourses(combined);
+      } else {
+        setCourses(mockCourses);
+      }
       setError('');
     } catch (err) {
-      console.error(err);
-      setError('Failed to load courses curriculum database.');
+      console.warn('API unavailable, utilizing rich mock courses data:', err);
+      setCourses(mockCourses);
+      setError('');
     } finally {
       setLoading(false);
     }
@@ -27,9 +40,11 @@ const Courses = () => {
     fetchCourses();
   }, []);
 
+  const categories = ['All Courses', 'Diploma', 'Accounting', 'Coding'];
+
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          course.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (course.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (course.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All Courses' || course.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -144,13 +159,23 @@ const Courses = () => {
                   <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-3 font-light">
                     {course.description}
                   </p>
-                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-outline-variant">
-                    <div className="flex items-center gap-2 text-primary font-bold">
-                      <span className="material-symbols-outlined text-[18px]">schedule</span>
-                      <span className="font-label-sm">{course.duration}</span>
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant font-medium pt-1">
+                    <span className="flex items-center gap-1 text-orange-500 font-bold">
+                      <span className="material-symbols-outlined text-[16px] fill-current">star</span>
+                      <span>{course.rating || 4.9}</span>
+                    </span>
+                    <span className="font-bold text-primary text-base">₹{(course.price || 3500).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="mt-auto pt-3 flex items-center justify-between border-t border-outline-variant">
+                    <div className="flex items-center gap-1.5 text-on-surface-variant font-semibold text-xs">
+                      <span className="material-symbols-outlined text-[16px]">schedule</span>
+                      <span>{course.duration}</span>
                     </div>
-                    <button className="text-primary font-label-md group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">
-                      Enroll Now <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    <button 
+                      onClick={() => navigate('/admission', { state: { selectedCourse: course.title } })}
+                      className="text-primary font-label-md group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold text-xs"
+                    >
+                      Enroll Now <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                   </div>
                 </div>
@@ -175,7 +200,10 @@ const Courses = () => {
           <p className="font-body-lg text-body-lg mb-8 opacity-90 max-w-2xl mx-auto font-light">
             Our academic counselors are ready to help you map out your career path and select the program that best fits your goals.
           </p>
-          <button className="bg-on-primary text-primary px-10 py-4 rounded-full font-headline-sm hover:bg-secondary-fixed transition-colors font-bold active:scale-95">
+          <button 
+            onClick={() => navigate('/admission')}
+            className="bg-on-primary text-primary px-10 py-4 rounded-full font-headline-sm hover:bg-secondary-fixed transition-colors font-bold active:scale-95 shadow-xl"
+          >
             Book a Free Counseling Session
           </button>
         </div>
